@@ -1,0 +1,2706 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>על אותו גל — מהדורה זוגית מורחבת (250 קלפים)</title>
+<meta name="theme-color" content="#13070C">
+<meta name="color-scheme" content="dark">
+<!-- התקנה כאפליקציה. קבצי התמיכה נטענים רק כשהמשחק מתארח בשרת;
+     בהטמעה בתוך iframe הם פשוט לא נמצאים וזה לא שובר כלום. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="על אותו גל">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Heebo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ===================================================================
+   על אותו גל — Dark Velvet & Antique Gold
+   ערכה אחת. הזהב בשלושה תפקידים: הטבעה, פעולה ראשית, מונוגרמה.
+   =================================================================== */
+:root{
+  --ground:#13070C; --surface:#34111F; --raised:#572337;
+  --gold:#C6A45B; --foil:#E6D09B; --ivory:#F6F0E6; --muted:#B9AAA8;
+  --line:rgba(198,164,91,.22); --hair:rgba(198,164,91,.14);
+  --serif:"Frank Ruhl Libre","David Libre",Georgia,serif;
+  --sans:"Heebo","Assistant",-apple-system,"Segoe UI",sans-serif;
+  --noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+html{box-sizing:border-box;height:100%;overflow:hidden;overscroll-behavior:none}
+*,*::before,*::after{box-sizing:inherit}
+/* position:fixed + inset:0 נועל את האפליקציה ל-viewport הנראה.
+   בלי זה סרגל הכתובת בנייד משנה את הגובה, העמוד נגלל,
+   והדפדפן חוטף כל מחווה אנכית — ולכן ההחלקה לא עובדת. */
+body{
+  position:fixed;inset:0;width:100%;
+  margin:0;height:100%;overflow:hidden;overscroll-behavior:none;
+  touch-action:manipulation;
+  font-family:var(--sans);font-size:16px;line-height:1.6;
+  color:var(--ivory);
+  background:radial-gradient(118% 62% at 80% -6%,#4A1A2C 0%,transparent 56%),var(--ground);
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+}
+svg{display:block}
+button{font-family:inherit;cursor:pointer}
+/* חובה: מחלקות .memo/.timer/.diagram/.btn מגדירות display:flex ומבטלות את [hidden] של הדפדפן */
+[hidden]{display:none!important}
+button:focus-visible,.inp:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--foil);outline-offset:3px;border-radius:3px}
+
+/* ---------- מעטפת: גובה 100% ללא 100vh, ללא sticky ---------- */
+.app{position:relative;height:100%;display:flex;flex-direction:column;overflow:hidden;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+@supports (height:100dvh){ body{height:100dvh} }
+.app::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:var(--noise);background-size:150px;opacity:.04;mix-blend-mode:overlay;
+}
+.app>*{position:relative;z-index:1}
+
+/* ---------- סרגל עליון ---------- */
+.topbar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 16px;border-bottom:1px solid var(--hair)}
+.brandbtn{display:flex;align-items:center;gap:9px;background:none;border:0;padding:0;color:inherit;min-height:44px}
+.mark{width:28px;height:28px;flex:none;display:grid;place-items:center}
+.brandbtn b{font-size:13.5px;font-weight:600}
+.icons{display:flex;gap:4px}
+.ibtn{position:relative;width:38px;height:38px;border-radius:3px;border:1px solid rgba(198,164,91,.2);background:rgba(87,35,55,.3);display:grid;place-items:center;color:var(--gold);transition:background .18s,border-color .18s}
+/* הרחבת שטח הלחיצה ל-44px בלי לשנות את המידה החזותית */
+.ibtn::after,.heart::after{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px}
+.ibtn[aria-pressed="true"]{background:rgba(198,164,91,.16);border-color:rgba(198,164,91,.5)}
+.ibtn[hidden]{display:none}
+
+/* ---------- אזורי מסך ---------- */
+.stage{flex:1;min-height:0;display:flex;flex-direction:column}
+.screen{flex:1;min-height:0;display:none;flex-direction:column;animation:fade .18s ease-out}
+.screen.active{display:flex}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.scroller{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+/* תיחום רוחב: המשחק נשאר בעמודה אחת גם במסך רחב */
+.intro,.choose,.album,.meter,.actions{width:100%;max-width:460px;margin-inline:auto}
+.topbar>*:first-child{margin-inline-start:max(0px,calc((100% - 460px)/2))}
+.topbar>*:last-child{margin-inline-end:max(0px,calc((100% - 460px)/2))}
+
+/* ---------- טיפוגרפיה ---------- */
+h1,h2,h3{font-family:var(--serif);font-weight:700;margin:0;line-height:1.2;text-wrap:balance}
+.lbl{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:800}
+.sub{color:var(--muted);font-size:13.5px;margin:0;line-height:1.55}
+
+/* ---------- כפתורים ---------- */
+.btn{border:0;border-radius:4px;padding:14px 16px;font-size:14.5px;font-weight:700;min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .14s,filter .18s}
+.btn:active{transform:scale(.985)}
+.btn-gold{background:linear-gradient(168deg,var(--foil),var(--gold) 58%,#9C7A38);color:#200A12;box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 8px 20px -8px rgba(198,164,91,.5)}
+.btn-ghost{background:rgba(87,35,55,.34);color:var(--ivory);border:1px solid rgba(198,164,91,.26);font-weight:600}
+.btn-quiet{position:relative;background:none;border:0;color:var(--muted);font-size:12.5px;font-weight:500;padding:11px;min-height:44px}
+.btn-quiet::after{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;min-width:44px;height:44px}
+.btn-quiet u{text-decoration-color:rgba(185,170,168,.4);text-underline-offset:3px}
+
+/* ---------- מסך 1: פתיחה ---------- */
+.intro{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:24px;padding:28px 26px;text-align:center}
+/* margin-inline:auto — ה-SVG הוא display:block ולכן בלעדיו נצמד לימין ב-RTL */
+.boxart,#wordmark-wave{margin-inline:auto}
+.logotype{display:flex;flex-direction:column;gap:9px}
+.logotype h1{font-size:clamp(28px,8.5vw,34px);letter-spacing:-.015em}
+.hairline{display:flex;align-items:center;gap:9px;justify-content:center;color:var(--gold)}
+.hairline i{height:1px;width:34px;background:currentColor;opacity:.45}
+.fields{display:flex;flex-direction:column;gap:12px;text-align:right}
+.field{display:flex;flex-direction:column;gap:5px}
+.inp{border:0;border-bottom:1px solid rgba(198,164,91,.34);background:rgba(0,0,0,.2);padding:11px 12px;border-radius:3px 3px 0 0;font-family:var(--serif);font-size:17px;color:var(--ivory);min-height:46px;width:100%;transition:border-color .18s}
+.inp::placeholder{color:rgba(185,170,168,.5)}
+.inp:focus{outline:none;border-bottom-color:var(--foil)}
+
+/* ---------- מסך 2: בחירה ---------- */
+.choose{padding:20px 16px 22px;display:flex;flex-direction:column;gap:17px}
+.greet{display:flex;flex-direction:column;gap:5px}
+.greet h2{font-size:23px}
+.greet span{font-size:12px;color:var(--muted)}
+.memo{border:1px solid rgba(198,164,91,.3);border-radius:5px;background:rgba(87,35,55,.26);padding:13px 14px;display:flex;flex-direction:column;gap:10px}
+.memo p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.6}
+.memo .memo-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.primary-card{width:100%;border:1px solid rgba(198,164,91,.4);border-radius:6px;background:linear-gradient(160deg,rgba(87,35,55,.6),rgba(36,11,21,.6));padding:17px;display:flex;align-items:center;justify-content:space-between;gap:14px;color:inherit;text-align:right;box-shadow:0 14px 30px -16px #000;transition:border-color .18s,transform .14s}
+.primary-card:active{transform:scale(.99)}
+.primary-card .t{display:flex;flex-direction:column;gap:3px}
+.primary-card .t b{font-family:var(--serif);font-size:19px;font-weight:700}
+.primary-card .t span{font-size:11.5px;color:var(--muted)}
+.grouplabel{display:flex;align-items:center;gap:9px;color:var(--gold)}
+.grouplabel i{flex:1;height:1px;background:currentColor;opacity:.22}
+.spines{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.spine{aspect-ratio:2/3;border-radius:5px;padding:9px 6px;border:1px solid rgba(198,164,91,.2);background:linear-gradient(165deg,rgba(87,35,55,.5),rgba(27,8,16,.8));display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;gap:4px;color:inherit;transition:border-color .18s,transform .14s}
+.spine:active{transform:scale(.97)}
+.spine .glyph{color:var(--gold);margin-top:3px}
+.spine b{font-size:11.5px;font-weight:600;line-height:1.25}
+.spine span{font-size:9.5px;color:rgba(185,170,168,.6);font-variant-numeric:tabular-nums}
+.spine.accent{border-color:rgba(230,208,155,.42);background:linear-gradient(165deg,rgba(122,46,72,.5),rgba(36,11,21,.85))}
+
+/* ---------- מסך 3: שולחן ---------- */
+.meter{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 18px 7px}
+.meter .n{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meter .n b{color:var(--foil);font-weight:700}
+.pips{display:flex;gap:3px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:62%}
+.pip{width:4px;height:4px;border-radius:50%;background:rgba(198,164,91,.26);flex:none;transition:transform .3s,background .3s}
+.pip.done{background:var(--gold)}
+.pip.now{background:var(--foil);box-shadow:0 0 7px var(--gold);transform:scale(1.5)}
+.hairbar{width:84px;height:2px;border-radius:2px;background:rgba(198,164,91,.2);overflow:hidden;flex:none}
+.hairbar i{display:block;height:100%;background:var(--gold);transition:width .45s ease-out}
+
+.table{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;align-items:center;justify-content:center;padding:5px 16px;perspective:1400px}
+.deck{position:relative;width:min(258px,100%);flex:none}
+.pile{position:absolute;inset:0;border-radius:11px;background:var(--surface);border:1px solid rgba(198,164,91,.2)}
+.pile:nth-child(1){transform:translate(7px,9px) rotate(2.2deg);opacity:.5}
+.pile:nth-child(2){transform:translate(-5px,5px) rotate(-1.6deg);opacity:.72}
+.pile:nth-child(3){transform:translate(3px,2px) rotate(.8deg);opacity:.88}
+.pile[hidden]{display:none}
+
+/* קלף: 2:3 כרצפה, מתארך לפי תוכן */
+.card{
+  position:relative;display:grid;grid-template-areas:"a";border-radius:11px;
+  background:linear-gradient(162deg,#3E1524 0%,#250C15 52%,#1B0810 100%);
+  box-shadow:0 1px 0 rgba(230,208,155,.14) inset,0 0 0 1px rgba(198,164,91,.4),0 22px 44px -14px rgba(0,0,0,.9);
+  transform-style:preserve-3d;backface-visibility:hidden;
+  user-select:none;-webkit-user-select:none;touch-action:pan-y;cursor:grab;
+}
+.card:active{cursor:grabbing}
+.card::before{content:"";grid-area:a;width:0;padding-top:150%}
+.card::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:11px;background-image:var(--noise);background-size:120px;opacity:.055;mix-blend-mode:overlay}
+.emboss{position:absolute;inset:7px;border-radius:7px;pointer-events:none;border:1px solid rgba(198,164,91,.3);box-shadow:0 1px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(230,208,155,.1)}
+.emboss::before{content:"";position:absolute;inset:3px;border-radius:5px;border:1px solid rgba(198,164,91,.12)}
+.card-in{grid-area:a;position:relative;z-index:2;display:flex;flex-direction:column;min-height:0;padding:20px 19px 16px}
+
+.card-top{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.deckname{display:flex;align-items:center;gap:7px;color:var(--gold)}
+.deckname span{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+/* direction:ltr — אחרת ה-bidi הופך "155 / 250" ל-"250 / 155" */
+.cardno{font-size:10.5px;color:rgba(185,170,168,.65);font-variant-numeric:tabular-nums;letter-spacing:.08em;direction:ltr}
+.card-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:13px 0}
+.card-text{font-family:var(--serif);font-weight:500;font-size:21px;line-height:1.52;margin:0;text-wrap:pretty}
+.card-text.sm{font-size:17.5px;line-height:1.56}
+.card-foot{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid var(--hair)}
+.turn{font-size:11.5px;color:var(--muted)}
+.turn b{color:var(--foil);font-weight:600}
+.heart{position:relative;width:30px;height:30px;border-radius:3px;flex:none;border:1px solid rgba(198,164,91,.26);background:rgba(0,0,0,.26);display:grid;place-items:center;color:var(--muted);transition:color .2s,border-color .2s,background .2s}
+.heart[aria-pressed="true"]{color:var(--foil);border-color:rgba(230,208,155,.55);background:rgba(198,164,91,.14)}
+.heart.beat{animation:beat .22s ease-out}
+@keyframes beat{50%{transform:scale(1.22)}}
+
+/* תרשים + טיימר בתוך הקלף */
+.diagram{margin:0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:9px 0;display:flex;align-items:center;gap:11px}
+.diagram svg{flex:none;width:74px;height:52px}
+.diagram figcaption{font-size:11px;color:var(--muted);line-height:1.5}
+.timer{display:flex;align-items:center;gap:11px}
+.timer-ring{flex:none;width:38px;height:38px}
+.timer-ring circle{fill:none;stroke-width:2;stroke-linecap:round}
+.timer-ring .trk{stroke:rgba(198,164,91,.2)}
+.timer-ring .arc{stroke:var(--gold);transition:stroke-dashoffset 1s linear}
+.timer-ring text{font-family:var(--sans);font-size:10.5px;font-weight:700;fill:var(--ivory)}
+.timer .btn{flex:1;min-height:44px;padding:9px 13px;font-size:13px}
+.timer .reset{flex:none;width:44px;min-height:44px;padding:0}
+
+/* תגי החלקה */
+.swipe-badge{position:absolute;top:18px;z-index:30;padding:8px 13px;border-radius:4px;font-size:13px;font-weight:800;opacity:0;transition:opacity .12s;pointer-events:none;border:1px solid}
+#badge-right{right:16px;transform:rotate(5deg);background:rgba(198,164,91,.95);color:#200A12;border-color:var(--foil)}
+#badge-left{left:16px;transform:rotate(-5deg);background:rgba(36,11,21,.95);color:var(--foil);border-color:rgba(230,208,155,.5)}
+
+.actions{flex:none;display:flex;flex-direction:column;gap:4px;padding:10px 16px 9px}
+.row2{display:grid;grid-template-columns:1.42fr 1fr;gap:9px}
+.minor{display:flex;align-items:center;justify-content:center;gap:6px}
+.choice-actions{display:flex;flex-direction:column;gap:9px}
+/* שורת מידע שקטה — לא תיבה, כדי לא לדחוק את הפעולה הראשית */
+.statline{margin:-4px 0 0;font-size:12px;color:var(--muted);line-height:1.6;
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.btn-link{position:relative;background:none;border:0;padding:4px 0;min-height:24px;font-family:var(--sans);font-size:12px;
+  color:var(--gold);font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+/* שטח לחיצה 44px בלי לשנות את המידה החזותית */
+.btn-link::after{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:100%;min-width:44px;height:44px}
+.minor .dot{color:rgba(185,170,168,.45);font-size:12px}
+
+/* ניחוש: כתיבה → הסתרה → גילוי. בלי ניקוד. */
+.guess{display:flex;flex-direction:column;gap:7px;border-top:1px solid var(--hair);padding-top:9px}
+.guess-hint{margin:0;font-size:11.5px;color:var(--gold);line-height:1.5}
+.guess-input{width:100%;resize:none;border:0;border-bottom:1px solid rgba(198,164,91,.34);
+  background:rgba(0,0,0,.22);border-radius:3px 3px 0 0;padding:7px 10px;
+  font-family:var(--serif);font-size:15px;color:var(--ivory);line-height:1.45}
+.guess-input::placeholder{color:rgba(185,170,168,.45)}
+.guess-input:focus{outline:none;border-bottom-color:var(--foil)}
+.guess-shown{margin:0;font-family:var(--serif);font-size:15px;line-height:1.5;color:var(--foil);
+  background:rgba(198,164,91,.1);border:1px solid rgba(198,164,91,.3);border-radius:4px;padding:8px 11px}
+.guess .btn{min-height:44px;padding:9px 14px;font-size:13px}
+
+/* גב הקלף */
+.card.back{background:linear-gradient(158deg,#451A2B,#240B14)}
+.lattice{position:absolute;inset:7px;border-radius:7px;opacity:.5;overflow:hidden;z-index:1}
+.backmono{grid-area:a;position:relative;z-index:2;place-self:center;width:74px;height:74px;border-radius:50%;border:1px solid rgba(230,208,155,.45);background:radial-gradient(circle at 36% 28%,rgba(230,208,155,.17),transparent 68%);display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:28px;color:var(--foil);box-shadow:0 0 34px rgba(198,164,91,.14),inset 0 1px 0 rgba(230,208,155,.22)}
+.backmono::after{content:"";position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(230,208,155,.17)}
+
+/* אנימציות שליפה */
+@keyframes dealIn{
+  0%{opacity:0;transform:translateY(-14px) scale(1.03) rotateY(180deg)}
+  28%{opacity:1}
+  72%{transform:translateY(0) scale(1) rotateY(0deg)}
+  86%{transform:scale(1.006)}
+  100%{opacity:1;transform:none}
+}
+@keyframes flyRight{to{opacity:0;transform:translateX(125%) translateY(-26px) rotate(18deg) scale(.88)}}
+@keyframes flyLeft{to{opacity:0;transform:translateX(-125%) translateY(18px) rotate(-16deg) scale(.88)}}
+.deal{animation:dealIn .52s cubic-bezier(.22,1,.36,1) both}
+.fly-r{animation:flyRight .32s cubic-bezier(.4,0,1,1) both}
+.fly-l{animation:flyLeft .32s cubic-bezier(.4,0,1,1) both}
+
+/* ---------- מסך 4: אלבום ---------- */
+.album{padding:24px 18px 22px;display:flex;flex-direction:column;gap:19px}
+.album-head{text-align:center;display:flex;flex-direction:column;gap:7px}
+.album-head h2{font-size:26px}
+.album-head span{font-size:11.5px;color:var(--muted)}
+.album-head svg{margin:0 auto 2px}
+.keepsakes{display:flex;flex-direction:column;gap:9px}
+.keep{border:1px solid var(--line);border-radius:5px;background:linear-gradient(160deg,rgba(87,35,55,.4),rgba(27,8,16,.55));padding:13px 14px;display:flex;gap:11px;align-items:flex-start}
+.keep .mark{color:var(--foil);flex:none;margin-top:2px}
+.keep .tx{display:flex;flex-direction:column;gap:4px}
+.keep .tx p{margin:0;font-family:var(--serif);font-size:14.5px;line-height:1.5}
+.keep .tx span{font-size:10.5px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;font-weight:800}
+.tally{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:12px;padding:1px 2px}
+.tally b{color:var(--foil);font-weight:700;font-variant-numeric:tabular-nums}
+.empty{border:1px dashed var(--line);border-radius:5px;padding:18px 14px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.6}
+
+/* ---------- מודאל ---------- */
+.modal{position:absolute;inset:0;z-index:60;background:rgba(10,3,6,.82);display:none;align-items:center;justify-content:center;padding:18px}
+.modal.open{display:flex}
+.sheet{width:100%;max-width:420px;max-height:100%;overflow-y:auto;border:1px solid rgba(198,164,91,.34);border-radius:6px;background:linear-gradient(165deg,#3B1423,#200A12);padding:22px;display:flex;flex-direction:column;gap:15px;box-shadow:0 30px 70px -20px #000}
+.sheet-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.sheet h2{font-size:21px}
+.sheet ol{margin:0;padding-inline-start:19px;display:flex;flex-direction:column;gap:11px;color:var(--muted);font-size:13.5px;line-height:1.65}
+.sheet ol strong{color:var(--ivory);font-weight:600}
+.sheet .x{width:34px;height:34px;flex:none;border-radius:3px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--muted);display:grid;place-items:center}
+
+.toast{position:absolute;left:50%;bottom:20px;transform:translate(-50%,14px);z-index:70;background:#2B0D18;border:1px solid rgba(198,164,91,.45);color:var(--ivory);font-size:12.5px;padding:10px 16px;border-radius:4px;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;max-width:86%;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-height:620px){
+  .card-text{font-size:19px}
+  .intro{gap:18px;padding:20px 24px}
+  .boxart{width:84px;height:84px}
+}
+/* hover רק במכשירים עם עכבר — במגע הוא "נתקע" אחרי הקשה */
+@media (hover:hover) and (pointer:fine){
+  .ibtn:hover{background:rgba(87,35,55,.5)}
+  .btn-gold:hover{filter:brightness(1.06)}
+  .btn-ghost:hover{background:rgba(87,35,55,.55)}
+  .btn-quiet:hover{color:var(--ivory)}
+  .primary-card:hover{border-color:rgba(230,208,155,.6)}
+  .spine:hover{border-color:rgba(230,208,155,.5)}
+  .btn-link:hover{color:var(--foil)}
+}
+/* התאמה למכשיר: במסך גדול עם מגע הקלף גדל ומנצל את השטח */
+@media (min-width:700px) and (min-height:720px){
+  .deck{width:min(324px,62vw)}
+  .card-in{padding:24px 23px 19px}
+  .card-text{font-size:25px;line-height:1.5}
+  .card-text.sm{font-size:20px}
+  .deckname span{font-size:11.5px}
+  .cardno,.turn{font-size:12px}
+  .diagram svg{width:88px;height:62px}
+  .intro,.choose,.album,.meter,.actions{max-width:520px}
+  .topbar>*:first-child{margin-inline-start:max(0px,calc((100% - 520px)/2))}
+  .topbar>*:last-child{margin-inline-end:max(0px,calc((100% - 520px)/2))}
+  .btn{font-size:15.5px;min-height:52px}
+  .spine b{font-size:12.5px}
+}
+/* נייד לרוחב: הקלף מוותר על יחס 2:3 והכפתורים עוברים לצידו.
+   ב-RTL העמודה הראשונה בגריד היא הימנית — ולכן הקלף מימין והפעולות משמאל. */
+@media (max-height:520px){
+  .topbar{padding:3px 16px}
+  .brandbtn{min-height:44px}
+  .brandbtn b{font-size:12.5px}
+
+  #game-screen.active{
+    display:grid;
+    grid-template-columns:1fr clamp(168px,26vw,224px);
+    grid-template-rows:auto 1fr;
+    grid-template-areas:"meter actions" "table actions";
+    min-height:0;
+  }
+  .meter{grid-area:meter;max-width:none;margin:0;padding:5px 14px 2px}
+  .table{grid-area:table;min-height:0;padding:4px 14px 8px}
+  .actions{
+    grid-area:actions;align-self:center;
+    max-width:none;width:auto;margin:0;
+    padding:8px 14px 8px 16px;gap:8px;
+    border-inline-start:1px solid var(--hair);
+  }
+  .row2{grid-template-columns:1fr;gap:8px}
+  .btn{min-height:46px;padding:11px 14px;font-size:14px}
+  .minor{flex-direction:column;gap:2px;align-items:stretch}
+  .minor .dot{display:none}
+  .minor .btn-quiet{min-height:34px;padding:5px 0;font-size:11.5px}
+
+  .card::before{padding-top:0}            /* ביטול רצפת 2:3 — קלף רוחבי */
+  .deck{width:min(430px,100%)}
+  .card-in{padding:14px 18px 12px}
+  .card-body{padding:9px 0;gap:9px}
+  .card-text{font-size:18px;line-height:1.45}
+  .card-text.sm{font-size:16px}
+  .card-foot{padding-top:8px}
+  .diagram{padding:6px 0}
+  .diagram svg{width:62px;height:44px}
+  .pile:nth-child(1){transform:translate(6px,6px) rotate(1.6deg)}
+  .pile:nth-child(2){transform:translate(-4px,4px) rotate(-1.2deg)}
+  .guess{padding-top:7px;gap:5px}
+  .guess-input{padding:6px 9px;font-size:14px}
+  .guess .btn{min-height:40px}
+}
+/* מסכים צרים לרוחב — אין מקום לעמודה, חוזרים לערימה */
+@media (max-height:520px) and (max-width:660px){
+  #game-screen.active{display:flex;flex-direction:column}
+  .actions{border-inline-start:0;padding:6px 16px;align-self:stretch;width:100%;max-width:460px;margin-inline:auto}
+  .row2{grid-template-columns:1.42fr 1fr}
+  .minor{flex-direction:row;gap:10px}
+  .minor .dot{display:inline}
+  .meter{max-width:460px;margin-inline:auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ סרגל עליון ============ -->
+  <header class="topbar">
+    <button class="brandbtn" onclick="openNamesScreen()" aria-label="חזרה למסך הפתיחה">
+      <span class="mark" id="mark-sm" aria-hidden="true"></span>
+      <b>על אותו גל</b>
+    </button>
+    <div class="icons">
+      <button class="ibtn" id="btn-music" onclick="toggleAmbientMusic()" aria-pressed="false" aria-label="מוזיקת אווירה" title="מוזיקת אווירה"></button>
+      <button class="ibtn" id="btn-next-track" onclick="nextAmbientTrack()" aria-label="המנגינה הבאה" title="המנגינה הבאה" hidden></button>
+      <button class="ibtn" id="btn-sound" onclick="toggleSoundEffects()" aria-pressed="true" aria-label="צלילי משחק" title="צלילי משחק"></button>
+      <button class="ibtn" id="btn-fullscreen" onclick="toggleFullscreen()" aria-label="מסך מלא" title="מסך מלא" hidden></button>
+      <button class="ibtn" id="btn-rules" onclick="toggleRulesModal(true)" aria-label="איך משחקים" title="איך משחקים"></button>
+    </div>
+  </header>
+
+  <main class="stage">
+
+    <!-- ============ מסך 1: פתיחת הקופסה ============ -->
+    <section class="screen active" id="names-screen" aria-label="מסך פתיחה">
+      <div class="scroller">
+        <div class="intro">
+          <div class="boxart" id="boxart" aria-hidden="true"></div>
+
+          <div class="logotype">
+            <h1>על אותו גל</h1>
+            <div id="wordmark-wave" aria-hidden="true"></div>
+            <p class="sub">250 קלפים לערב אחד של צחוק,<br>שיחה וקרבה.</p>
+          </div>
+
+          <div class="fields">
+            <div class="field">
+              <label class="lbl" for="input-partner-1">בן או בת זוג</label>
+              <input class="inp" id="input-partner-1" type="text" maxlength="20" placeholder="השם שלך" autocomplete="off">
+            </div>
+            <div class="field">
+              <label class="lbl" for="input-partner-2">בן או בת זוג</label>
+              <input class="inp" id="input-partner-2" type="text" maxlength="20" placeholder="והשם שלך" autocomplete="off">
+            </div>
+          </div>
+
+          <button class="btn btn-gold" onclick="submitCoupleNames()">פותחים את החפיסה</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ מסך 2: בחירת הערב ============ -->
+    <section class="screen" id="welcome-screen" aria-label="בחירת משחק">
+      <div class="scroller">
+        <div class="choose">
+          <div class="greet">
+            <h2 id="greet-line">בחרו את האווירה לערב</h2>
+            <span id="greet-sub">החליקו קלף ימינה להשלמה או שמאלה לדילוג</span>
+          </div>
+
+          <div class="memo" id="resume-banner" hidden>
+            <div class="memo-top"><span class="lbl">סיבוב שנקטע באמצע</span></div>
+            <p id="resume-text"></p>
+            <button class="btn btn-gold" onclick="resumeActiveRound()">המשיכו מאיפה שעצרתם</button>
+          </div>
+
+          <button class="primary-card" onclick="startMixedEvening(20)">
+            <span class="t"><b>מתחילים את הערב</b><span>20 קלפים · כ-40 דקות</span></span>
+            <span id="chev-primary" aria-hidden="true"></span>
+          </button>
+
+          <button class="btn btn-ghost" onclick="startMixedEvening(10)">סיבוב קצר · 10 קלפים</button>
+
+          <!-- מידע בשורות שקטות ולא בתיבות, כדי שהפעולה הראשית תישאר בראש המסך -->
+          <p class="statline" id="memory-line" hidden>
+            <span id="memory-text"></span>
+            <button class="btn-link" id="btn-reset" onclick="resetSavedMemory()">איפוס</button>
+          </p>
+          <p class="statline" id="retired-line" hidden>
+            <span id="retired-text"></span>
+            <button class="btn-link" onclick="restoreRetired()">החזרה לחפיסה</button>
+          </p>
+
+          <div class="grouplabel"><span class="lbl">או חפיסה אחת</span><i></i></div>
+
+          <div class="spines" id="deck-spines"></div>
+
+          <button class="btn-quiet" id="btn-favorites" onclick="startFavoritesPlay()"><u>המועדפים שלנו · <span id="fav-count">0</span> קלפים</u></button>
+          <button class="btn-quiet" onclick="startDeckPlay('all')"><u>כל החפיסה · 250 קלפים</u></button>
+          <p class="statline" style="justify-content:center;opacity:.75">אפשר לעצור בכל רגע — ההתקדמות נשמרת לבד.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ מסך 3: שולחן הקלפים ============ -->
+    <section class="screen" id="game-screen" aria-label="שולחן הקלפים">
+      <div class="meter">
+        <div class="n"><b id="prog-now">1</b> מתוך <span id="prog-total">20</span></div>
+        <div class="pips" id="pips" role="presentation"></div>
+        <div class="hairbar" id="hairbar" hidden><i id="hairbar-fill" style="width:5%"></i></div>
+      </div>
+
+      <div class="table" id="table">
+        <div class="deck">
+          <div class="pile" id="pile-1"></div>
+          <div class="pile" id="pile-2"></div>
+          <div class="pile" id="pile-3"></div>
+
+          <div class="swipe-badge" id="badge-right">השלמנו</div>
+          <div class="swipe-badge" id="badge-left">דילוג</div>
+
+          <article class="card" id="card" aria-live="polite">
+            <div class="emboss" aria-hidden="true"></div>
+            <div class="card-in">
+              <div class="card-top">
+                <span class="deckname"><span id="card-deck-icon" aria-hidden="true"></span><span id="card-deck-name">—</span></span>
+                <span class="cardno" id="card-no">—</span>
+              </div>
+
+              <div class="card-body" id="card-body">
+                <p class="card-text" id="card-text">טוען קלף…</p>
+
+                <div class="guess" id="guess-box" hidden>
+                  <p class="guess-hint" id="guess-hint"></p>
+                  <textarea class="guess-input" id="guess-input" rows="2" maxlength="140"
+                            placeholder="כתבו כאן את הניחוש…" aria-label="הניחוש שלכם"></textarea>
+                  <p class="guess-shown" id="guess-shown" hidden></p>
+                  <button class="btn btn-ghost" id="guess-btn" onclick="guessAction()">הסתרת הניחוש</button>
+                </div>
+
+                <figure class="diagram" id="diagram" hidden>
+                  <div id="diagram-svg" aria-hidden="true"></div>
+                  <figcaption id="diagram-cap"></figcaption>
+                </figure>
+
+                <div class="timer" id="timer" hidden>
+                  <svg class="timer-ring" viewBox="0 0 38 38" aria-hidden="true">
+                    <circle class="trk" cx="19" cy="19" r="16"></circle>
+                    <circle class="arc" id="timer-arc" cx="19" cy="19" r="16" stroke-dasharray="100.53" stroke-dashoffset="0" transform="rotate(-90 19 19)"></circle>
+                    <text x="19" y="23" text-anchor="middle" id="timer-text">1:00</text>
+                  </svg>
+                  <button class="btn btn-ghost" id="timer-btn" onclick="toggleCardTimer()">הפעלת הטיימר</button>
+                  <button class="btn btn-ghost reset" onclick="resetCardTimer()" aria-label="איפוס הטיימר" title="איפוס"><span id="icon-reset" aria-hidden="true"></span></button>
+                </div>
+              </div>
+
+              <div class="card-foot">
+                <span class="turn" id="turn-line"></span>
+                <button class="heart" id="btn-heart" onclick="toggleFavoriteCurrentCard()" aria-pressed="false" aria-label="שמירה למועדפים"></button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="row2">
+          <button class="btn btn-gold" id="btn-primary" onclick="primaryAction()">השלמנו</button>
+          <button class="btn btn-ghost" onclick="deferCard()">לא עכשיו</button>
+        </div>
+        <div class="minor">
+          <button class="btn-quiet" onclick="retireCard()"><u>לא בשבילנו</u></button>
+          <span class="dot">·</span>
+          <button class="btn-quiet" onclick="goHome()"><u>חזרה לתפריט</u></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ מסך 4: האלבום שלנו ============ -->
+    <section class="screen" id="summary-screen" aria-label="סיכום הערב">
+      <div class="scroller">
+        <div class="album">
+          <div class="album-head">
+            <span id="album-icon" aria-hidden="true"></span>
+            <h2 id="album-title">איזה ערב היה לנו</h2>
+            <span id="album-date"></span>
+          </div>
+
+          <div class="grouplabel"><span class="lbl">הקלפים שלקחתם איתכם</span><i></i></div>
+          <div class="keepsakes" id="keepsakes"></div>
+
+          <div class="tally" id="tally"></div>
+
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <button class="btn btn-gold" id="btn-more" onclick="continueUnseenRound(20)">עוד 20 קלפים חדשים</button>
+            <button class="btn btn-ghost" id="btn-more-10" onclick="continueUnseenRound(10)">עוד 10 קלפים</button>
+            <button class="btn btn-ghost" id="btn-remember" onclick="saveCoupleMemory()">שמירה · נמשיך בפעם הבאה</button>
+            <button class="btn-quiet" onclick="copySummary()"><u>העתקת סיכום הערב</u></button>
+            <button class="btn-quiet" onclick="goHome()"><u>חזרה לתפריט</u></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ מודאל הוראות ============ -->
+  <div class="modal" id="rules-modal" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+    <div class="sheet">
+      <div class="sheet-top">
+        <h2 id="rules-title">איך משחקים</h2>
+        <button class="x" onclick="toggleRulesModal(false)" aria-label="סגירה"><span id="icon-x" aria-hidden="true"></span></button>
+      </div>
+      <ol>
+        <li><strong>מתחלפים בתור.</strong> בתחתית כל קלף מופיע שם מי שתורו להקריא או לבצע.</li>
+        <li><strong>שלוש אפשרויות.</strong> ״השלמנו״ כשביצעתם, ״לא עכשיו״ לקלף שמתאים לכם אבל לא ברגע הזה (הוא יחזור), ו״לא בשבילנו״ להסרה. החלקה ימינה ושמאלה עושה את שתי הראשונות.</li>
+        <li><strong>קלפי ניחוש.</strong> העבירו את המכשיר למנחש, כתבו את הניחוש והסתירו אותו. אחר כך גלו יחד — ואז נאמרת התשובה האמיתית. אין נכון ולא נכון.</li>
+        <li><strong>טיימרים ותרשימים.</strong> משימה עם זמן פותחת טיימר שאתם מפעילים כשנוח לכם, וקלפי עיסוי מציגים תרשים הדגמה.</li>
+        <li><strong>לב ואלבום.</strong> סמנו בלב קלף שאהבתם — הוא נשמר לאלבום ולחפיסת המועדפים.</li>
+        <li><strong>זיכרון זוגי.</strong> בסוף הערב לחצו ״שמירה״ ובפעם הבאה תקבלו רק קלפים חדשים.</li>
+        <li><strong>מוזיקה.</strong> שימו ברקע משהו שאתם אוהבים — זה משנה את כל האווירה.</li>
+      </ol>
+      <button class="btn btn-gold" onclick="toggleRulesModal(false)">הבנו, בואו נשחק</button>
+    </div>
+  </div>
+
+  <div class="modal" id="choice-modal" role="dialog" aria-modal="true" aria-labelledby="choice-title">
+    <div class="sheet">
+      <h2 id="choice-title"></h2>
+      <p class="sub" id="choice-body"></p>
+      <div class="choice-actions" id="choice-actions"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+/* ===================================================================
+   חלק 1 — אייקונים, חפיסות, תרשימים
+   =================================================================== */
+const I = {
+  music:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  next:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 6l-8 6 8 6zM6 6v12"/></svg>',
+  sound:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6.5 9H3v6h3.5L11 19z"/><path d="M15.5 8.5a5 5 0 010 7"/></svg>',
+  mute:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6.5 9H3v6h3.5L11 19z"/><path d="M16 10l4 4M20 10l-4 4"/></svg>',
+  info:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 17v-5M12 8h.01"/></svg>',
+  x:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  chev:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C6A45B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5l-7 7 7 7"/></svg>',
+  /* ---- לוגו: שני גלים בהיסט פאזה שמתכנסים לקו אחד.
+     המיזוג בצד שמאל — בעברית קוראים ימין לשמאל, ולכן הלוגו נקרא
+     "התחלנו שונים, סיימנו על אותו גל". ----------------------------- */
+  markLg:'<svg width="120" height="120" viewBox="0 0 64 64" role="img" aria-label="על אותו גל"><defs><linearGradient id="mg" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#E6D09B"/><stop offset="1" stop-color="#C6A45B"/></linearGradient></defs><circle cx="32" cy="32" r="28.5" fill="none" stroke="#C6A45B" stroke-opacity=".34"/><circle cx="32" cy="32" r="25" fill="none" stroke="#C6A45B" stroke-opacity=".14" stroke-width=".8"/><path d="M55 20 C50 20 48 26 44 30 C40 34 36 30 32 28.4 C28.5 27 25 30.6 22 31.3 C18 32 14 32 9 32" fill="none" stroke="url(#mg)" stroke-width="2.1" stroke-linecap="round"/><path d="M55 44 C50 44 48 38 44 34 C40 30 36 34 32 35.6 C28.5 37 25 33.4 22 32.7 C18 32 14 32 9 32" fill="none" stroke="url(#mg)" stroke-width="2.1" stroke-linecap="round" stroke-opacity=".62"/><circle cx="9" cy="32" r="2.1" fill="#E6D09B"/></svg>',
+  markSm:'<svg width="28" height="28" viewBox="0 0 64 64" aria-hidden="true"><path d="M55 20 C50 20 48 26 44 30 C40 34 36 30 32 28.4 C28.5 27 25 30.6 22 31.3 C18 32 14 32 9 32" fill="none" stroke="#E6D09B" stroke-width="3.8" stroke-linecap="round"/><path d="M55 44 C50 44 48 38 44 34 C40 30 36 34 32 35.6 C28.5 37 25 33.4 22 32.7 C18 32 14 32 9 32" fill="none" stroke="#C6A45B" stroke-width="3.8" stroke-linecap="round"/></svg>',
+  wordmarkWave:'<svg width="172" height="15" viewBox="0 0 160 15" aria-hidden="true"><path d="M152 5 C146 5 143 10 138 11 C132 12 128 5 122 4 C116 3 112 10 106 11 C100 12 96 6 90 6 C78 6 40 7.5 8 7.5" fill="none" stroke="#C6A45B" stroke-width="1.6" stroke-linecap="round"/><path d="M152 11 C146 11 143 6 138 5 C132 4 128 11 122 12 C116 13 112 6 106 5 C100 4 96 10 90 10 C78 10 40 8 8 7.5" fill="none" stroke="#C6A45B" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  expand:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H5a1 1 0 00-1 1v4M15 4h4a1 1 0 011 1v4M9 20H5a1 1 0 01-1-1v-4M15 20h4a1 1 0 001-1v-4"/></svg>',
+  shrink:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h4a1 1 0 001-1V4M19 9h-4a1 1 0 01-1-1V4M5 15h4a1 1 0 011 1v4M19 15h-4a1 1 0 00-1 1v4"/></svg>',
+  reset:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 5v6h6"/><path d="M5.6 11a7 7 0 1112.8 3.8"/></svg>',
+  album:'<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#C6A45B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5A1.5 1.5 0 015.5 6h4L11 7.8h7.5A1.5 1.5 0 0120 9.3v7.2a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 16.5z"/><path d="M8 11.5h8M8 14.5h5"/></svg>',
+  heart:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0112 8.6a4 4 0 017 2.2c0 4.8-7 9.2-7 9.2z"/></svg>',
+  heartFill:'<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0112 8.6a4 4 0 017 2.2c0 4.8-7 9.2-7 9.2z"/></svg>',
+  d_guess:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.3"/></svg>',
+  d_memories:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2 2 0 016 4h5v16H6a2 2 0 01-2-2z"/><path d="M20 5.5A2 2 0 0018 4h-5v16h5a2 2 0 002-2z"/></svg>',
+  d_humor:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 4v7a4 4 0 008 0V4"/><path d="M5 4h14M9 20h6M12 15v5"/></svg>',
+  d_gesture:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M12 9v11M4 13h16"/><path d="M12 9S9.5 4 7.5 5.5 9 9 12 9zM12 9s2.5-5 4.5-3.5S15 9 12 9z"/></svg>',
+  d_closeness:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0112 8.6a4 4 0 017 2.2c0 4.8-7 9.2-7 9.2z"/></svg>',
+  d_massage:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17c0-3 2-5 4-5.5M19 17c0-3-2-5-4-5.5"/><path d="M9 11.5V7a3 3 0 016 0v4.5"/><path d="M4 17h16v2H4z"/></svg>'
+};
+const ICON_SM = s => s.replace(/width="1[57]"/,'width="14"').replace(/height="1[57]"/,'height="14"');
+
+const DECKS = {
+  guess:{name:'מכיר אותך מחדש',short:'מכיר אותך<br>מחדש',subtitle:'ניחוש אישי',icon:I.d_guess,count:37,
+    roleText:'מנחשים ואז מגלים',tip:'נסו לנחש מה בן/בת הזוג יענו לפני שהם מגלים את התשובה האמיתית!'},
+  memories:{name:'רק אנחנו יודעים',short:'רק אנחנו<br>יודעים',subtitle:'זיכרונות ורגעים',icon:I.d_memories,count:37,
+    roleText:'נזכרים ומשתפים',tip:'קחו רגע להיכנס לפרטים הקטנים של הסיפור — שם נמצא הקסם.'},
+  humor:{name:'ההומור שלנו',short:'ההומור<br>שלנו',subtitle:'צחוק וקלילות',icon:I.d_humor,count:37,
+    roleText:'משימה קלילה',tip:'לא לוקחים את עצמנו ברצינות מדי — העיקר החיוך!'},
+  gesture:{name:'מחווה קטנה',short:'מחווה<br>קטנה',subtitle:'נתינה ותשומת לב',icon:I.d_gesture,count:37,
+    roleText:'מחווה מהלב',tip:'המחוות הקטנות ביום-יום הן הדלק הכי חזק לזוגיות.'},
+  closeness:{name:'קרוב ללב',short:'קרוב<br>ללב',subtitle:'אינטימיות וחיבור',icon:I.d_closeness,count:73,accent:true,
+    roleText:'רגע של קרבה',tip:'האטו את הקצב, נשמו עמוק ותנו לנוכחות המשותפת לדבר.'},
+  massage:{name:'עיסוי ופינוק',short:'עיסוי<br>ופינוק',subtitle:'מגע מרגיע ומפנק',icon:I.d_massage,count:29,accent:true,
+    roleText:'פינוק מעשי',tip:'שאלו תמיד על עוצמת הלחיצה הנוחה והיעזרו בתרשים ההדגמה.'}
+};
+
+/* ---------- תרשימי עיסוי: מותאמים לפלטה החדשה ---------- */
+const DG = {stroke:'#C6A45B',light:'#E6D09B',fill:'rgba(198,164,91,.12)',acc:'rgba(198,164,91,.22)'};
+const MASSAGE_DIAGRAMS = {
+  shoulders:{cap:'לישה איטית מצידי הצוואר החוצה',svg:`<svg viewBox="0 0 220 118"><path d="M88 14 C88 26 92 36 82 43 C58 51 34 61 26 91 L26 112 L194 112 L194 91 C186 61 162 51 138 43 C128 36 132 26 132 14" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.5" stroke-linecap="round"/><circle cx="66" cy="60" r="14" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="4 3"/><circle cx="154" cy="60" r="14" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="4 3"/></svg>`},
+  neck:{cap:'עיסוי עדין בעורף מלמטה למעלה',svg:`<svg viewBox="0 0 220 118"><path d="M78 20 C78 8 142 8 142 20 C142 38 134 48 132 60 C154 66 174 78 180 100 L40 100 C46 78 66 66 88 60 C86 48 78 38 78 20 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.3"/><path d="M98 64 L98 42 M122 64 L122 42" stroke="${DG.light}" stroke-width="3" stroke-linecap="round"/><path d="M93 47 L98 40 L103 47 M117 47 L122 40 L127 47" fill="none" stroke="${DG.light}" stroke-width="2" stroke-linecap="round"/></svg>`},
+  scalp:{cap:'עיגולים רכים בכריות האצבעות',svg:`<svg viewBox="0 0 220 118"><path d="M68 100 C64 54 80 20 110 20 C140 20 156 54 152 100" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.5"/><circle cx="88" cy="52" r="11" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="3 3"/><circle cx="132" cy="52" r="11" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="3 3"/></svg>`},
+  hand:{cap:'תנועות מעגליות במרכז כף היד',svg:`<svg viewBox="0 0 220 118"><path d="M84 104 L84 60 C84 53 91 53 91 60 L91 38 C91 31 98 31 98 38 L98 30 C98 23 106 23 106 30 L106 36 C106 29 113 29 113 36 L113 62 L126 50 C131 45 137 50 132 56 L118 80 L118 104 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.3"/><circle cx="101" cy="74" r="11" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2"/></svg>`},
+  arm:{cap:'סחיטה ולישה איטית לאורך הזרוע',svg:`<svg viewBox="0 0 220 118"><path d="M42 48 C75 40 135 42 178 52 L178 72 C135 80 75 82 42 74 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.4"/><ellipse cx="86" cy="61" rx="14" ry="12" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="3 3"/><ellipse cx="136" cy="61" rx="14" ry="11" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="3 3"/></svg>`},
+  foot:{cap:'לחיצות אגודל לאורך קשת הסוליה',svg:`<svg viewBox="0 0 220 118"><path d="M92 18 C108 12 126 20 128 38 C130 52 122 64 124 80 C126 94 118 104 104 104 C90 104 84 94 86 80 C88 64 78 48 80 34 C82 24 86 20 92 18 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.5"/><ellipse cx="105" cy="60" rx="11" ry="18" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2"/></svg>`},
+  calf:{cap:'לישת שריר השוק מלמטה למעלה',svg:`<svg viewBox="0 0 220 118"><path d="M84 14 L136 14 C142 34 140 54 126 74 L124 98 L96 98 L94 74 C80 54 78 34 84 14 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.4"/><ellipse cx="110" cy="44" rx="16" ry="20" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="4 3"/><path d="M110 70 L110 30 M104 37 L110 29 L116 37" fill="none" stroke="${DG.light}" stroke-width="2.5" stroke-linecap="round"/></svg>`},
+  back:{cap:'לחיצות משני צידי עמוד השדרה',svg:`<svg viewBox="0 0 220 118"><path d="M58 18 L162 18 L150 101 L70 101 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.3"/><line x1="110" y1="20" x2="110" y2="99" stroke="${DG.stroke}" stroke-width="1.5" stroke-dasharray="4 4"/><path d="M90 28 L90 90 M130 28 L130 90" stroke="${DG.light}" stroke-width="3" stroke-linecap="round"/></svg>`},
+  front:{cap:'מגע חם ורך בצד הקדמי של הגוף',svg:`<svg viewBox="0 0 220 118"><path d="M88 12 C88 22 92 30 80 36 C58 42 46 54 52 100 L168 100 C174 54 162 42 140 36 C128 30 132 22 132 12" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.3" stroke-linecap="round"/><circle cx="110" cy="60" r="18" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="4 3"/><path d="M74 40 Q110 50 146 40" fill="none" stroke="${DG.light}" stroke-width="2.2" stroke-linecap="round"/></svg>`},
+  face:{cap:'עיגולים רכים על הלחיים, הלסת והסנטר',svg:`<svg viewBox="0 0 220 118"><path d="M110 14 C137 14 151 35 151 59 C151 86 134 105 110 105 C86 105 69 86 69 59 C69 35 83 14 110 14 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.4"/><path d="M79 70 C89 96 131 96 141 70" fill="none" stroke="${DG.stroke}" stroke-width="1.6" stroke-dasharray="4 4"/><circle cx="86" cy="74" r="12" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="3 3"/><circle cx="134" cy="74" r="12" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="3 3"/><path d="M92 48 h14 M128 48 h-14" stroke="${DG.light}" stroke-width="2.4" stroke-linecap="round"/></svg>`},
+  ear:{cap:'מעיסוי האפרכסת ועד התנוך, בין אגודל לאצבע',svg:`<svg viewBox="0 0 220 118"><path d="M166 30 C160 16 146 10 132 14 C106 20 92 44 94 70 C95 88 103 102 114 104 C124 106 131 98 131 88 C131 79 125 74 118 76" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.5" stroke-linecap="round"/><path d="M142 36 C126 32 114 46 114 62 C114 72 118 80 124 84" fill="none" stroke="${DG.stroke}" stroke-width="1.8" stroke-linecap="round"/><ellipse cx="120" cy="94" rx="11" ry="9" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="3 3"/><path d="M176 20 C184 44 184 76 176 100" fill="none" stroke="${DG.stroke}" stroke-width="1.4" stroke-opacity=".5"/></svg>`},
+  upperarm:{cap:'תנועות עוטפות מהכתף לאורך הזרוע',svg:`<svg viewBox="0 0 220 118"><path d="M40 58 C40 34 57 19 79 21 C96 23 107 36 109 53 L109 73 C105 88 88 97 70 95 C50 93 40 79 40 58 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.4"/><path d="M109 53 C133 51 161 55 183 61 L183 75 C161 81 133 83 109 73 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.4"/><circle cx="74" cy="56" r="15" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="4 3"/><ellipse cx="146" cy="66" rx="20" ry="11" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="4 3"/></svg>`},
+  frontthigh:{cap:'לישה ארוכה מהברך כלפי מעלה',svg:`<svg viewBox="0 0 220 118"><path d="M79 12 L141 12 C145 42 141 72 133 94 L131 102 L97 102 L95 94 C87 72 83 42 79 12 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.4"/><path d="M97 100 C105 110 117 110 125 100" fill="none" stroke="${DG.stroke}" stroke-width="1.8" stroke-linecap="round"/><ellipse cx="110" cy="52" rx="19" ry="26" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="4 3"/><path d="M110 84 L110 32 M101 41 L110 30 L119 41" fill="none" stroke="${DG.light}" stroke-width="2.5" stroke-linecap="round"/></svg>`},
+  pelvis:{cap:'לישה עגולה באגן ובצידי המותן',svg:`<svg viewBox="0 0 220 118"><path d="M66 14 C64 32 62 44 58 56 C52 72 56 90 70 98 C86 107 134 107 150 98 C164 90 168 72 162 56 C158 44 156 32 154 14 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.4"/><line x1="110" y1="16" x2="110" y2="58" stroke="${DG.stroke}" stroke-width="1.5" stroke-dasharray="4 4"/><circle cx="80" cy="76" r="15" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="4 3"/><circle cx="140" cy="76" r="15" fill="${DG.acc}" stroke="${DG.light}" stroke-width="2" stroke-dasharray="4 3"/><path d="M88 66 C94 60 102 60 106 66" fill="none" stroke="${DG.light}" stroke-width="2" stroke-linecap="round"/><path d="M132 66 C126 60 118 60 114 66" fill="none" stroke="${DG.light}" stroke-width="2" stroke-linecap="round"/></svg>`},
+  warmhands:{cap:'כפות ידיים חמות מונחות ללא תנועה',svg:`<svg viewBox="0 0 220 118"><path d="M66 100 L66 60 C66 53 73 53 73 60 L73 40 C73 33 80 33 80 40 L80 32 C80 25 87 25 87 32 L87 38 C87 31 94 31 94 38 L94 62 L104 54 C109 50 114 55 110 60 L98 80 L98 100 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.2"/><path d="M154 100 L154 60 C154 53 147 53 147 60 L147 40 C147 33 140 33 140 40 L140 32 C140 25 133 25 133 32 L133 38 C133 31 126 31 126 38 L126 62 L116 54 C111 50 106 55 110 60 L122 80 L122 100 Z" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.2"/><path d="M84 22 C84 14 88 10 88 4 M110 18 C110 10 114 6 114 0 M136 22 C136 14 140 10 140 4" fill="none" stroke="${DG.light}" stroke-width="2" stroke-linecap="round" stroke-opacity=".85" transform="translate(0,6)"/><ellipse cx="110" cy="88" rx="34" ry="13" fill="${DG.acc}" stroke="${DG.light}" stroke-width="1.8" stroke-dasharray="4 3"/></svg>`},
+  freechoice:{cap:'האזור והעוצמה לבחירתכם החופשית',svg:`<svg viewBox="0 0 220 118"><circle cx="110" cy="58" r="36" fill="${DG.fill}" stroke="${DG.stroke}" stroke-width="2.3" stroke-dasharray="5 3"/><path d="M95 50c0-3 2-5 4-5.5M131 50c0-3-2-5-4-5.5" stroke="${DG.light}" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M99 44.5V40a5.5 5.5 0 0111 0v4.5" stroke="${DG.light}" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M92 62h36v4H92z" fill="${DG.acc}" stroke="${DG.light}" stroke-width="1.6"/></svg>`}
+};
+
+/* התרשים נגזר מ-similarityGroup של CARD_META, עם override לחריגים בלבד */
+const DIAGRAM_BY_GROUP = {
+  massage_shoulders_neck:'shoulders', massage_head_face:'scalp', massage_hands_arms:'hand',
+  massage_feet_legs:'foot', massage_back_torso:'back', massage_front_torso:'front',
+  massage_lower_body:'back', free_choice_pampering:'freechoice'
+};
+/* override רק לחריגים שהקבוצה לא מתארת במדויק */
+const DIAGRAM_OVERRIDE = {
+  226:'neck',       // עורף ובסיס הגולגולת
+  229:'arm',        // אמות ופרקי ידיים
+  231:'face',       // פנים ולסתות
+  233:'ear',        // אוזניים ותנוכים
+  234:'calf',       // שוקיים
+  237:'neck',       // קו הצוואר הקדמי
+  232:'pelvis',     // אגן וצידי המותן
+  241:'frontthigh', // ירכיים קדמיות
+  243:'warmhands',  // חום סטטי, בלי תנועה
+  242:'upperarm',   // שרירי הזרוע העליונה
+  248:'face'        // פנים, עצמות לחיים וסנטר
+};
+
+function getMassageDiagram(card){
+  const meta = CARD_META[card.id] || {};
+  const key = DIAGRAM_OVERRIDE[card.id] || DIAGRAM_BY_GROUP[meta.similarityGroup] || 'shoulders';
+  return MASSAGE_DIAGRAMS[key] || MASSAGE_DIAGRAMS.shoulders;
+}
+
+/* ===================================================================
+   חלק 2 — שמע: AudioContext יחיד משותף למוזיקה ולאפקטים
+   =================================================================== */
+let AUDIO = null;
+function audioCtx(){
+  if (AUDIO) { if (AUDIO.state === 'suspended') AUDIO.resume(); return AUDIO; }
+  const C = window.AudioContext || window.webkitAudioContext;
+  if (!C) return null;
+  try { AUDIO = new C(); } catch(e) { return null; }
+  // דפדפנים יוצרים את ההקשר במצב suspended כשהוא נוצר מחוץ למחוות משתמש.
+  // בלי resume כאן, הצליל הראשון במשחק נבלע.
+  if (AUDIO.state === 'suspended') AUDIO.resume();
+  return AUDIO;
+}
+
+/* ===================================================================
+   מוזיקת רקע — 12 מנגינות פרוצדורליות (Web Audio API)
+   האקורדים והמלודיות משוחזרים במדויק מקובץ המקור, ללא שינוי.
+   רצות על ה-AudioContext המשותף; אינן מתנגנות ללא לחיצת משתמש.
+   =================================================================== */
+let ambientMusic = {
+  isPlaying:false, masterGain:null, stepTimer:null, trackTimer:null,
+  currentTrackIndex:0, stepIndex:0,
+  tracks:[
+    {name:'1/12 פסנתר לאור נרות',tempoMs:1350,wave:'sine',
+     chords:[[261.63,329.63,392.00,493.88],[220.00,261.63,329.63,392.00],[174.61,220.00,261.63,349.23],[196.00,246.94,293.66,392.00]],
+     melody:[523.25,493.88,392.00,329.63,440.00,392.00,349.23,293.66]},
+    {name:'2/12 לילה שקט בכוכבים',tempoMs:1550,wave:'triangle',
+     chords:[[293.66,349.23,440.00,523.25],[196.00,246.94,293.66,349.23],[261.63,329.63,392.00,493.88],[220.00,261.63,329.63,440.00]],
+     melody:[587.33,523.25,493.88,440.00,392.00,329.63,349.23,392.00]},
+    {name:'3/12 ספא וחמימות',tempoMs:1650,wave:'sine',
+     chords:[[246.94,293.66,369.99,440.00],[196.00,246.94,293.66,369.99],[293.66,369.99,440.00,554.37],[220.00,277.18,329.63,415.30]],
+     melody:[587.33,554.37,493.88,440.00,369.99,329.63,293.66,369.99]},
+    {name:'4/12 ג׳אז אינטימי רך',tempoMs:1250,wave:'triangle',
+     chords:[[233.08,293.66,349.23,440.00],[196.00,233.08,293.66,349.23],[261.63,311.13,392.00,466.16],[174.61,220.00,261.63,311.13]],
+     melody:[523.25,466.16,440.00,392.00,349.23,311.13,293.66,349.23]},
+    {name:'5/12 גשם על החלון',tempoMs:1500,wave:'sine',
+     chords:[[220.00,261.63,329.63,392.00],[174.61,220.00,261.63,329.63],[261.63,329.63,392.00,493.88],[196.00,246.94,293.66,349.23]],
+     melody:[659.25,587.33,523.25,493.88,440.00,392.00,440.00,493.88]},
+    {name:'6/12 ירח מעל הים',tempoMs:1450,wave:'triangle',
+     chords:[[196.00,246.94,293.66,369.99],[164.81,196.00,246.94,293.66],[261.63,329.63,392.00,493.88],[293.66,369.99,440.00,523.25]],
+     melody:[587.33,493.88,440.00,392.00,369.99,329.63,293.66,369.99]},
+    {name:'7/12 נבל של שבת',tempoMs:1600,wave:'sine',
+     chords:[[261.63,329.63,392.00,523.25],[293.66,349.23,440.00,523.25],[220.00,261.63,329.63,440.00],[174.61,220.00,261.63,349.23]],
+     melody:[523.25,659.25,587.33,523.25,440.00,523.25,392.00,329.63]},
+    {name:'8/12 בוסה נובה שקטה',tempoMs:1200,wave:'triangle',
+     chords:[[174.61,220.00,261.63,329.63],[196.00,246.94,293.66,349.23],[164.81,196.00,246.94,293.66],[220.00,261.63,329.63,392.00]],
+     melody:[440.00,523.25,493.88,392.00,349.23,440.00,392.00,329.63]},
+    {name:'9/12 קטיפה אדומה',tempoMs:1400,wave:'sine',
+     chords:[[246.94,311.13,369.99,440.00],[164.81,196.00,246.94,329.63],[220.00,261.63,329.63,392.00],[196.00,246.94,293.66,369.99]],
+     melody:[493.88,440.00,392.00,369.99,329.63,293.66,329.63,369.99]},
+    {name:'10/12 פריז בחצות',tempoMs:1300,wave:'triangle',
+     chords:[[220.00,261.63,329.63,415.30],[293.66,349.23,440.00,523.25],[196.00,246.94,293.66,349.23],[261.63,329.63,392.00,493.88]],
+     melody:[659.25,587.33,523.25,493.88,415.30,440.00,493.88,523.25]},
+    {name:'11/12 זריחה במדבר',tempoMs:1700,wave:'sine',
+     chords:[[293.66,369.99,440.00,554.37],[246.94,293.66,369.99,440.00],[196.00,246.94,293.66,369.99],[220.00,277.18,329.63,440.00]],
+     melody:[440.00,493.88,554.37,587.33,659.25,587.33,554.37,493.88]},
+    {name:'12/12 חלום מתוק',tempoMs:1550,wave:'sine',
+     chords:[[261.63,329.63,392.00,493.88],[174.61,220.00,261.63,349.23],[220.00,261.63,329.63,392.00],[196.00,246.94,293.66,392.00]],
+     melody:[392.00,440.00,493.88,523.25,493.88,440.00,392.00,329.63]}
+  ]
+};
+
+/* ===================================================================
+   נגן קבצים — ארבע מנגינות מוקלטות המתארחות ב-GitHub Pages.
+   אלה המוזיקה הראשית. 12 המנגינות הפרוצדורליות שלמעלה נשארות
+   כגיבוי ונכנסות אוטומטית אם הקבצים לא נטענים (אין רשת / חסימה).
+   להוספה או החלפה: לערוך את MUSIC_FILES בלבד.
+   =================================================================== */
+/* כשהמשחק מתארח יחד עם הקבצים — נתיב יחסי. אחרת כתובת מלאה. */
+const MUSIC_BASE = /github\.io$/.test(location.hostname) ? './' :
+  'https://b0504171366-maker.github.io/al-oto-gal-music/';
+const MUSIC_FILES = [
+  { name:'Sunset Plains',  file:'02-sunset-plains.mp3'  },
+  { name:'Mystical Piano', file:'03-mystical-piano.mp3' },
+  { name:'First Light',    file:'04-first-light.mp3'    },
+  { name:'Synthwave',      file:'01-synthwave.mp3'      }
+];
+const MUSIC_VOLUME = 0.42;
+const MUSIC_FADE_MS = 1500;
+
+let filePlayer = { el:null, order:[], pos:0, on:false, fadeTimer:null, dead:new Set() };
+
+function filesAvailable(){ return MUSIC_FILES.length > 0 && !usingFallback; }
+let usingFallback = false;
+
+function initFilePlayer(){
+  if (!MUSIC_FILES.length) { usingFallback = true; return; }
+  filePlayer.el = new Audio();
+  filePlayer.el.preload = 'none';          // לא מוריד דבר עד הלחיצה הראשונה
+  filePlayer.el.volume = 0;
+  filePlayer.el.addEventListener('ended', ()=> advanceFile(true));
+  filePlayer.el.addEventListener('error', onFileError);
+  filePlayer.order = shuffleArray(MUSIC_FILES.map((_,i)=>i));
+  filePlayer.pos = 0;
+}
+function currentFile(){
+  if (!filePlayer.order.length) return null;
+  return MUSIC_FILES[filePlayer.order[filePlayer.pos % filePlayer.order.length]];
+}
+function fadeFileTo(target, ms, done){
+  if (filePlayer.fadeTimer) clearInterval(filePlayer.fadeTimer);
+  const el = filePlayer.el;
+  if (!el){ if (done) done(); return; }
+  const steps = Math.max(1, Math.round(ms/60)), from = el.volume, step = (target-from)/steps;
+  let i = 0;
+  filePlayer.fadeTimer = setInterval(()=>{
+    i++;
+    try { el.volume = Math.min(1, Math.max(0, i >= steps ? target : from + step*i)); } catch(e){}
+    if (i >= steps){ clearInterval(filePlayer.fadeTimer); filePlayer.fadeTimer = null; if (done) done(); }
+  }, 60);
+}
+function playCurrentFile(){
+  const t = currentFile(); if (!t) return;
+  filePlayer.el.src = MUSIC_BASE + t.file;
+  filePlayer.el.volume = 0;
+  const pr = filePlayer.el.play();
+  if (pr && pr.catch) pr.catch(()=> onFileError());
+  fadeFileTo(MUSIC_VOLUME, MUSIC_FADE_MS);
+  updateMusicButtonUI();
+}
+function advanceFile(auto){
+  filePlayer.pos = (filePlayer.pos + 1) % filePlayer.order.length;
+  playCurrentFile();
+  const t = currentFile();
+  if (t && !auto) showToast(t.name);
+}
+/* קובץ שנכשל מדולג. אם כולם נכשלו — נופלים חזרה למנגינות הפרוצדורליות. */
+function onFileError(){
+  if (!filePlayer.on) return;
+  filePlayer.dead.add(filePlayer.order[filePlayer.pos % filePlayer.order.length]);
+  if (filePlayer.dead.size >= MUSIC_FILES.length){
+    filePlayer.on = false;
+    usingFallback = true;
+    showToast('המוזיקה לא נטענה — עברנו למנגינות המובנות');
+    startAmbientMusic();
+    return;
+  }
+  advanceFile(true);
+}
+
+function toggleAmbientMusic(){
+  if (filesAvailable()){
+    if (filePlayer.on){
+      filePlayer.on = false;
+      updateMusicButtonUI();
+      fadeFileTo(0, 800, ()=>{ try { filePlayer.el.pause(); } catch(e){} });
+    } else {
+      filePlayer.on = true;
+      filePlayer.dead.clear();
+      playCurrentFile();
+    }
+    return;
+  }
+  ambientMusic.isPlaying ? stopAmbientMusic() : startAmbientMusic();
+}
+
+function startAmbientMusic(){
+  const ctx = audioCtx(); if (!ctx) return;
+  ambientMusic.isPlaying = true;
+  ambientMusic.masterGain = ctx.createGain();
+  ambientMusic.masterGain.gain.setValueAtTime(0.08, ctx.currentTime);
+  ambientMusic.masterGain.connect(ctx.destination);
+  updateMusicButtonUI();
+  playAmbientStep();
+  scheduleAmbientTrackLoop();
+  ambientMusic.trackTimer = setInterval(() => {
+    if (!ambientMusic.isPlaying) return;
+    ambientMusic.currentTrackIndex = (ambientMusic.currentTrackIndex + 1) % ambientMusic.tracks.length;
+    ambientMusic.stepIndex = 0;
+    updateMusicButtonUI();
+    scheduleAmbientTrackLoop();
+  }, 150000);
+}
+
+function nextAmbientTrack(){
+  if (filesAvailable()){
+    if (!filePlayer.on){ toggleAmbientMusic(); return; }
+    fadeFileTo(0, 500, ()=> advanceFile(false));
+    return;
+  }
+  if (!ambientMusic.isPlaying) { startAmbientMusic(); return; }
+  ambientMusic.currentTrackIndex = (ambientMusic.currentTrackIndex + 1) % ambientMusic.tracks.length;
+  ambientMusic.stepIndex = 0;
+  updateMusicButtonUI();
+  scheduleAmbientTrackLoop();
+  playAmbientStep();
+  showToast(ambientMusic.tracks[ambientMusic.currentTrackIndex].name);
+}
+
+function scheduleAmbientTrackLoop(){
+  if (ambientMusic.stepTimer) clearInterval(ambientMusic.stepTimer);
+  const track = ambientMusic.tracks[ambientMusic.currentTrackIndex];
+  ambientMusic.stepTimer = setInterval(() => { if (ambientMusic.isPlaying) playAmbientStep(); }, track.tempoMs);
+}
+
+function playAmbientStep(){
+  const ctx = AUDIO;
+  if (!ambientMusic.isPlaying || !ctx || !ambientMusic.masterGain) return;
+  const now = ctx.currentTime;
+  const track = ambientMusic.tracks[ambientMusic.currentTrackIndex];
+  const chord = track.chords[ambientMusic.stepIndex % track.chords.length];
+  const note  = track.melody[ambientMusic.stepIndex % track.melody.length];
+
+  chord.forEach((freq, idx) => {
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+    gain.gain.setValueAtTime(0.0001, now + idx * 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.14, now + idx * 0.08 + 0.35);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + (track.tempoMs/1000) * 1.35);
+    osc.connect(gain); gain.connect(ambientMusic.masterGain);
+    osc.start(now + idx * 0.08); osc.stop(now + (track.tempoMs/1000) * 1.4);
+  });
+
+  const melOsc = ctx.createOscillator(), melGain = ctx.createGain();
+  melOsc.type = track.wave;
+  melOsc.frequency.setValueAtTime(note, now + 0.25);
+  melGain.gain.setValueAtTime(0.0001, now + 0.25);
+  melGain.gain.exponentialRampToValueAtTime(0.16, now + 0.45);
+  melGain.gain.exponentialRampToValueAtTime(0.0001, now + (track.tempoMs/1000) * 1.2);
+  melOsc.connect(melGain); melGain.connect(ambientMusic.masterGain);
+  melOsc.start(now + 0.25); melOsc.stop(now + (track.tempoMs/1000) * 1.25);
+
+  ambientMusic.stepIndex += 1;
+}
+
+function stopAmbientMusic(){
+  ambientMusic.isPlaying = false;
+  if (ambientMusic.stepTimer) clearInterval(ambientMusic.stepTimer);
+  if (ambientMusic.trackTimer) clearInterval(ambientMusic.trackTimer);
+  ambientMusic.stepTimer = ambientMusic.trackTimer = null;
+  if (ambientMusic.masterGain){
+    const dead = ambientMusic.masterGain;
+    try{
+      const g = dead.gain, now = AUDIO.currentTime;
+      g.cancelScheduledValues(now); g.setValueAtTime(g.value, now);
+      g.linearRampToValueAtTime(0.0001, now + 0.6);
+    }catch(e){}
+    setTimeout(()=>{ try{ dead.disconnect(); }catch(e){} }, 900);
+    ambientMusic.masterGain = null;
+  }
+  updateMusicButtonUI();
+}
+
+function updateMusicButtonUI(){
+  const btn = document.getElementById('btn-music');
+  const nextBtn = document.getElementById('btn-next-track');
+  if (!btn) return;
+  btn.hidden = false;
+  const onFiles = filesAvailable() && filePlayer.on;
+  const playing = onFiles || ambientMusic.isPlaying;
+  btn.setAttribute('aria-pressed', playing ? 'true' : 'false');
+  nextBtn.hidden = !playing;
+  const t = currentFile();
+  btn.title = !playing ? 'מוזיקת אווירה'
+    : 'מתנגן: ' + (onFiles && t ? t.name : ambientMusic.tracks[ambientMusic.currentTrackIndex].name);
+}
+
+/* ---------- אפקטי צליל ---------- */
+function toggleSoundEffects(){
+  gameState.soundEnabled = !gameState.soundEnabled;
+  const b = document.getElementById('btn-sound');
+  b.innerHTML = gameState.soundEnabled ? I.sound : I.mute;
+  b.setAttribute('aria-pressed', gameState.soundEnabled ? 'true' : 'false');
+}
+
+function playCardDealSound(){
+  if (!gameState.soundEnabled) return;
+  const ctx = audioCtx(); if (!ctx) return;
+  try{
+    const len = Math.floor(ctx.sampleRate * 0.11);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<len;i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(len*0.35));
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const flt = ctx.createBiquadFilter(); flt.type='bandpass'; flt.frequency.value=1400;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.16, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime+0.11);
+    src.connect(flt); flt.connect(g); g.connect(ctx.destination); src.start();
+  }catch(e){}
+}
+
+function playFavoriteSound(){
+  if (!gameState.soundEnabled) return;
+  const ctx = audioCtx(); if (!ctx) return;
+  try{
+    [523.25, 659.25].forEach((f,i)=>{
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(f, ctx.currentTime + i*0.07);
+      g.gain.setValueAtTime(0.09, ctx.currentTime + i*0.07);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.07 + 0.3);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime + i*0.07); o.stop(ctx.currentTime + i*0.07 + 0.32);
+    });
+  }catch(e){}
+}
+
+/* פעמון סיום — חייב להישמע מעל המוזיקה.
+   שלוש הקשות עם הרמוניות ומעטפת מוקשת (אטאק 4ms), ולא סינוס רך.
+   המוזיקה מונמכת זמנית ב-70% כדי לפנות מקום, וחוזרת לאט. */
+function duckMusic(ms){
+  try{
+    if (filePlayer && filePlayer.on && filePlayer.el && !filePlayer.el.paused){
+      const el = filePlayer.el, from = el.volume;
+      el.volume = Math.max(0, from * 0.3);
+      setTimeout(()=>{                       // החזרה הדרגתית
+        let v = el.volume;
+        const step = (from - v) / 14;
+        const t = setInterval(()=>{
+          v += step;
+          if (v >= from){ try{ el.volume = from; }catch(e){} clearInterval(t); }
+          else try{ el.volume = v; }catch(e){}
+        }, 70);
+      }, ms);
+      return;
+    }
+    if (ambientMusic.isPlaying && ambientMusic.masterGain && AUDIO){
+      const g = ambientMusic.masterGain.gain, now = AUDIO.currentTime;
+      g.cancelScheduledValues(now);
+      g.setValueAtTime(g.value, now);
+      g.linearRampToValueAtTime(0.024, now + 0.08);
+      g.linearRampToValueAtTime(0.08,  now + ms/1000 + 1.2);
+    }
+  }catch(e){}
+}
+
+function playTimerBell(){
+  if (!gameState.soundEnabled) return;
+  const ctx = audioCtx(); if (!ctx) return;
+  duckMusic(1500);
+  try{
+    const out = ctx.createGain();
+    out.gain.value = 1;
+    out.connect(ctx.destination);
+
+    // שלוש הקשות יורדות — הדפוס שהאוזן קוראת כ"נגמר הזמן"
+    [[0, 1318.51], [0.19, 1046.50], [0.38, 880.00]].forEach(([t0, base], idx)=>{
+      const at = ctx.currentTime + t0;
+      const dur = idx === 2 ? 2.0 : 0.9;
+      const peak = idx === 2 ? 0.42 : 0.34;
+      // יסוד + שתי הרמוניות = צליל פעמון שחותך, לא סינוס שמתמזג
+      [[1, 1], [2.76, 0.42], [5.4, 0.16]].forEach(([mul, amp])=>{
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(base * mul, at);
+        g.gain.setValueAtTime(0.0001, at);
+        g.gain.exponentialRampToValueAtTime(peak * amp, at + 0.004);   // אטאק מוקש
+        g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+        o.connect(g); g.connect(out);
+        o.start(at); o.stop(at + dur + 0.05);
+      });
+      // רעש קצר על ההתקפה — נותן ל"הקשה" נוכחות גם ברמקול קטן
+      const len = Math.floor(ctx.sampleRate * 0.035);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i=0;i<len;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 3);
+      const src = ctx.createBufferSource(); src.buffer = buf;
+      const bp = ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value = base*1.6; bp.Q.value = 1.1;
+      const ng = ctx.createGain(); ng.gain.value = 0.16;
+      src.connect(bp); bp.connect(ng); ng.connect(out);
+      src.start(at);
+    });
+  }catch(e){}
+}
+
+/* ===================================================================
+   חלק 3 — 250 הקלפים. הנוסח והמזהים זהים למקור, ללא שינוי.
+   =================================================================== */
+const ALL_CARDS = [
+  // 1. מכיר אותך מחדש (37)
+  { id: 1, deck: 'guess', text: 'אם הייתה לנו חופשה של סוף שבוע בהפתעה מחר בבוקר – איזה יעד הייתי בוחר/ת?' },
+  { id: 2, deck: 'guess', text: 'מה הדבר הראשון שאני שם/ה לב אליו כשאנחנו נכנסים לבית של אנשים אחרים?' },
+  { id: 3, deck: 'guess', text: 'אם היו מפיקים תוכנית רדיו על השנה האחרונה בחיינו, איזו מנגינה לדעתך הייתי בוחר/ת לפתיח — ולמה?' },
+  { id: 4, deck: 'guess', text: 'אם הייתי חייב/ת לטעום מחר מאכל שעוד לא ניסיתי בחיים, על איזו בחירה מפתיעה היית מהמר/ת?' },
+  { id: 5, deck: 'guess', text: 'איזה הרגל קטן שלי לדעתך הכי מאפיין אותי כשאני מתרכז/ת?' },
+  { id: 6, deck: 'guess', text: 'אם הייתי יכול/ה ללמוד כישרון חדש תוך לילה אחד – מה הייתי בוחר/ת?' },
+  { id: 7, deck: 'guess', text: 'מחר מתפנות לי שעתיים בלי שום מחויבות. באיזו שעה אבחר לנצל אותן, ומה נראה לך שאעשה?' },
+  { id: 8, deck: 'guess', text: 'נסה/י לנחש איזו תכונה שלי אני שמח/ה במיוחד כשאת/ה מבחין/ה בה, גם אם כמעט לא מדברים עליה.' },
+  { id: 9, deck: 'guess', text: 'אחרי יום עמוס במיוחד, מה הייתי בוחר/ת מבין ארבע אפשרויות: שקט, טיול קצר, סיפור מצחיק או הפתעה? נחש/י לפני שאענה.' },
+  { id: 10, deck: 'guess', text: 'אילו יכולתי להזמין דמות היסטורית אחת לסעודה אצלנו, במי הייתי בוחר/ת — ומה הייתי רוצה לשאול אותה?' },
+  { id: 11, deck: 'guess', text: 'איזה חפץ ישן וחסר ערך כספי נראה לך שלא אסכים לזרוק, בגלל הסיפור שמאחוריו?' },
+  { id: 12, deck: 'guess', text: 'אם הייתה לי שעה פנויה לגמרי לעצמי בלי טלפון – איך הייתי מנצל/ת אותה?' },
+  { id: 13, deck: 'guess', text: 'איזה ריח יכול להחזיר אותי ברגע אחד לזיכרון מלפני עשרות שנים? נחש/י גם את הסיפור שמאחוריו.' },
+  { id: 14, deck: 'guess', text: 'אם היינו מקבלים שבוע ללמוד יחד כישרון מוזר שלא יועיל לנו בשום דבר מעשי, מה היית מנחש/ת שאבחר?' },
+  { id: 15, deck: 'guess', text: 'מה הדבר הכי ספונטני שהייתי שמח/ה שנעשה החודש?' },
+  { id: 16, deck: 'guess', text: 'איזו תכונה אצלך הכי הרשימה אותי בתחילת הקשר שלנו?' },
+  { id: 17, deck: 'guess', text: 'ממציאים טעם גלידה חדש על שם המשפחה שלנו. מה לדעתך הייתי מכניס/ה אליו, ואיך הייתי קורא/ת לו?' },
+  { id: 18, deck: 'guess', text: 'איזה נושא שיחה יכול לרתק אותי במשך שעות?' },
+  { id: 19, deck: 'guess', text: 'תאר/י שבת אידיאלית שלנו בעוד עשרים שנה, בלי לדבר על מטלות או סידורים. איפה אנחנו ומה מיוחד באווירה?' },
+  { id: 20, deck: 'guess', text: 'מה הדבר הקטן שאת/ה עושה שתמיד גורם לי לחייך?' },
+  { id: 21, deck: 'guess', text: 'אם הייתי בוחר/ת מזג אוויר מושלם שילווה אותנו לאורך כל הנופש הזה, מה הוא היה?' },
+  { id: 22, deck: 'guess', text: 'מה הזיכרון הכי מתוק שלי מהשנה האחרונה שלנו?' },
+  { id: 23, deck: 'guess', text: 'אם הייתי פותח/ת עסק קטן רק בשביל הכיף – איזה עסק זה היה?' },
+  { id: 24, deck: 'guess', text: 'מה הדבר שאני הכי גאה בו בעצמי בתקופה האחרונה?' },
+  { id: 25, deck: 'guess', text: 'איזה מקום שכבר ביקרנו בו תופתע/י לגלות שדווקא אליו אני מתגעגע/ת? נסה/י לנחש לפני שאענה.' },
+  { id: 26, deck: 'guess', text: 'מה הדבר הראשון שאני אוהב/ת לעשות כשאנחנו חוזרים מטיול או מאירוע?' },
+  { id: 27, deck: 'guess', text: 'איזו מתנה קטנה ולא יקרה תשמח אותי במיוחד?' },
+  { id: 28, deck: 'guess', text: 'אם היו מעניקים לנו פרס על כישרון משותף שפיתחנו במשך השנים, באיזו קטגוריה משונה היינו זוכים?' },
+  { id: 29, deck: 'guess', text: 'איזה פרט זעיר בבית או בטבע את/ה יודע/ת שאני אשים לב אליו הרבה לפני כל אדם אחר?' },
+  { id: 30, deck: 'guess', text: 'נותנים לנו כרטיס לחוויה חד־פעמית שמעולם לא ניסינו. איזו חוויה לדעתך אבחר — אם אין שום צורך להתחייב לבצע אותה?' },
+  { id: 31, deck: 'guess', text: 'מגישים לנו משקה מסתורי שלא שמענו עליו. מה לדעתך יגרום לי להסכים לטעום אותו — ומה יגרום לי לסרב?' },
+  { id: 32, deck: 'guess', text: 'מה הדבר הכי מצחיק שלדעתי קרה לנו לאחרונה?' },
+  { id: 33, deck: 'guess', text: 'איזה רעיון חדש ששמעתי לאחרונה היית מנחש/ת שהייתי רוצה לנסות, גם אם הוא נשמע קצת משונה?' },
+  { id: 34, deck: 'guess', text: 'אם היית כותב/ת לי פתק בן חמש מילים בלבד, איזה משפט לדעתך היה גורם לי לחייך במיוחד?' },
+  { id: 35, deck: 'guess', text: 'אם הייתי יכול/ה להקפיא רגע אחד מהשבוע הזה – איזה רגע הייתי בוחר/ת?' },
+  { id: 36, deck: 'guess', text: 'אילו היינו צריכים להמציא סמל משפחתי עם שני צבעים וסמל אחד, מה לדעתך הייתי בוחר/ת?' },
+  { id: 37, deck: 'guess', text: 'איזה הרגל זוגי שלנו אני הכי אוהב/ת לשמור עליו?' },
+
+  // 2. רק אנחנו יודעים (37)
+  { id: 38, deck: 'memories', text: 'ספרו בתורכם על הרגע המדויק שבו הבנתם שיש בינינו חיבור מיוחד.' },
+  { id: 39, deck: 'memories', text: 'מה הזיכרון הכי מצחיק שלנו מנסיעה או מטיול משותף?' },
+  { id: 40, deck: 'memories', text: 'איזה דייט שלנו נשאר חקוק לכם בזיכרון – ומה הפך אותו לכזה?' },
+  { id: 41, deck: 'memories', text: 'ספרו על תוכנית שהשתבשה בצורה מצחיקה, אבל בסופו של דבר הפכה להרפתקה שאתם שמחים שקרתה.' },
+  { id: 42, deck: 'memories', text: 'מה הבדיחה הפנימית שלנו שתמיד מצחיקה רק אותנו?' },
+  { id: 43, deck: 'memories', text: 'ספרו על מחווה אחת של בן/בת הזוג שלא תשכחו לעולם.' },
+  { id: 44, deck: 'memories', text: 'איזה שיר או מנגינה מרגישים ממש כמו הפסקול של הקשר שלנו?' },
+  { id: 45, deck: 'memories', text: 'מה הדבר הכי מפתיע שלמדתם על בן/בת הזוג אחרי שכבר חשבתם שאתם מכירים הכל?' },
+  { id: 46, deck: 'memories', text: 'נזכרים בארוחה משותפת שהייתה מוצלחת במיוחד (או כזו שהשתבשה והפכה לחוויה).' },
+  { id: 47, deck: 'memories', text: 'איזה משפט שבן/בת הזוג אמרו לכם פעם ליווה אתכם הרבה זמן?' },
+  { id: 48, deck: 'memories', text: 'ספרו על הפעם הראשונה שפגשתם את המשפחה או החברים הקרובים זה של זו.' },
+  { id: 49, deck: 'memories', text: 'מה התמונה המשותפת שלנו שאתם הכי אוהבים, ומה קרה רגע לפני שצולמה?' },
+  { id: 50, deck: 'memories', text: 'איזו החלטה שקיבלנו יחד הוכיחה את עצמה כהחלטה מעולה?' },
+  { id: 51, deck: 'memories', text: 'ספרו על רגע שקט ופשוט בבית שהרגיש לכם כמו אושר גדול.' },
+  { id: 52, deck: 'memories', text: 'מה הדבר שהכי השתנה לטובה אצל כל אחד מכם מאז שהכרנו?' },
+  { id: 53, deck: 'memories', text: 'איזו חגיגה קטנה וכמעט נשכחת הייתה בסופו של דבר שמחה יותר מאירוע גדול ומושקע?' },
+  { id: 54, deck: 'memories', text: 'נזכרים בשיחה ארוכה לתוך הלילה שבה הזמן פשוט טס.' },
+  { id: 55, deck: 'memories', text: 'מה הדבר הכי ספונטני שעשינו יחד אי פעם?' },
+  { id: 56, deck: 'memories', text: 'איזה מקום בעולם או בארץ הפך להיות ״המקום שלנו״?' },
+  { id: 57, deck: 'memories', text: 'ספרו על מתנה או הפתעה שקיבלתם מבן/בת הזוג ופגעה בול בלב.' },
+  { id: 58, deck: 'memories', text: 'איזה הרגל קטן אימצתם מבן/בת הזוג בלי לשים לב?' },
+  { id: 59, deck: 'memories', text: 'נזכרים ברגע שבו צחקנו כל כך חזק שכמעט לא הצלחנו לדבר.' },
+  { id: 60, deck: 'memories', text: 'איזה פרט משונה או זניח את/ה עדיין זוכר/ת מהפגישה הראשונה — למרות שאין לך מושג למה דווקא הוא נחרת בזיכרון?' },
+  { id: 61, deck: 'memories', text: 'איזה סיפור שלנו תמיד כיף לנו לספר לחברים?' },
+  { id: 62, deck: 'memories', text: 'ספרו על רגע שבו הרגשתם גאווה ענקית בבן/בת הזוג.' },
+  { id: 63, deck: 'memories', text: 'איזו תקופה משותפת שלנו לימדה אותנו הכי הרבה על אהבה?' },
+  { id: 64, deck: 'memories', text: 'מה הריח או הטעם שהכי מזכיר לכם את תחילת הקשר שלנו?' },
+  { id: 65, deck: 'memories', text: 'איזה מנהג או הרגל שהיה לנו לפני עשרים שנה היה מצחיק אותנו אילו ראינו אותו היום?' },
+  { id: 66, deck: 'memories', text: 'איזו מסורת קטנה יצרנו לעצמנו לאורך השנים?' },
+  { id: 67, deck: 'memories', text: 'ספרו על רגע שבו מבט אחד בינינו הספיק בלי צורך במילים.' },
+  { id: 68, deck: 'memories', text: 'מה ההפתעה הכי טובה שקרתה לנו כזוג?' },
+  { id: 69, deck: 'memories', text: 'אם היינו נותנים לערב הזה שם של ניגון או פיוט, מה היה השם שכל אחד מאיתנו היה בוחר?' },
+  { id: 70, deck: 'memories', text: 'מצלמה מהעתיד שולחת לנו תמונה אחת מעוד עשר שנים. מה הייתם רוצים לראות בה — משהו קטן ומשמח דווקא?' },
+  { id: 71, deck: 'memories', text: 'כל אחד בוחר ערב משותף שזכור לו היטב, ומתאר אותו רק בשלושה רמזים: מקום, צליל ומשפט. השני צריך לנחש.' },
+  { id: 72, deck: 'memories', text: 'אם הייתם כותבים כותרת לפרק הנוכחי בחיים שלנו – מה היא הייתה?' },
+  { id: 73, deck: 'memories', text: 'איזה רעיון או בילוי מהשנים הראשונות שלנו היה יכול להיות משעשע במיוחד אם היינו עושים לו היום גרסה משודרגת?' },
+  { id: 74, deck: 'memories', text: 'ספרו על פעם שבה בן/בת הזוג ידעו בדיוק מה אתם צריכים בלי שביקשתם.' },
+
+  // 3. ההומור שלנו (37)
+  { id: 75, deck: 'humor', text: 'אחד ממציא מוצר שימושי באופן מגוחך, ומנסה למכור אותו בפרסומת של 20 שניות. השני צריך לנחש לאיזו בעיה המוצר נועד.' },
+  { id: 76, deck: 'humor', text: 'תחרות מבטים (45 שניות): הביטו זה בעיניים של זו בלי למצמץ ובלי לצחוק — הראשון שמחייך נותן נשיקה!' },
+  { id: 77, deck: 'humor', text: 'המציאו יחד שם של סרט הוליוודי על החיים הזוגיים שלנו ותארו את הפוסטר.' },
+  { id: 78, deck: 'humor', text: 'כל אחד מעניק לשני מחמאה באמצעות דימוי מעולם אחר לגמרי. אסור להשתמש במילים ״טוב״, ״מדהים״ או ״מקסים״.' },
+  { id: 79, deck: 'humor', text: 'תארו את בן/בת הזוג כמו פרשן ספורט נלהב בשידור חי בזמן שהם מכינים קפה.' },
+  { id: 80, deck: 'humor', text: 'מי מכיר יותר טוב? אמרו יחד בקול רם: ים או הרים? מתוק או מלוח? קיץ או חורף?' },
+  { id: 81, deck: 'humor', text: 'ספרו את הסיפור של הפגישה הראשונה שלנו ב-20 שניות בלבד בסגנון דרמטי במיוחד!' },
+  { id: 82, deck: 'humor', text: 'הציגו בפנטומימה סיטואציה משפחתית מצחיקה ששניכם זוכרים. מותר להשתמש בחפצים שנמצאים סביבכם, אבל לא לדבר.' },
+  { id: 83, deck: 'humor', text: 'איזה כוח-על מצחיק הייתם נותנים לבן/בת הזוג כדי לעזור להם ביומיום?' },
+  { id: 84, deck: 'humor', text: 'הרכיבו יחד משפט אחד מילה-אחר-מילה שמתאר את הדייט הבא שלנו.' },
+  { id: 85, deck: 'humor', text: 'יש לכם מכונת זמן, אבל מותר לקחת לעבר רק חפץ אחד מהבית. במה תבחרו כדי להפתיע את האנשים שיפגשו אתכם?' },
+  { id: 86, deck: 'humor', text: 'תחרות חיוכים: נסו להצחיק את בן/בת הזוג תוך 20 שניות בלי לגעת בהם.' },
+  { id: 87, deck: 'humor', text: 'תנו לבן/בת הזוג ״פרס אוסקר״ מומצא על הישג משעשע מהשבוע האחרון.' },
+  { id: 88, deck: 'humor', text: 'אנחנו בני 85, יושבים במרפסת. איזו בדיחה משפחתית מלפני חמישים שנה עדיין גורמת לנו להתפקע מצחוק?' },
+  { id: 89, deck: 'humor', text: 'שחקו ״כן או לא״ (30 שניות): שאלו 5 שאלות מהירות בלי שלבן/בת הזוג מותר לומר ״כן״ או ״לא״!' },
+  { id: 90, deck: 'humor', text: 'המציאו אות סודי שמשמעותו ״חייבים להציל אותי מהשיחה הזאת״. אסור להשתמש במילים, והסימן צריך להיראות תמים לחלוטין.' },
+  { id: 91, deck: 'humor', text: 'איזה תפקיד כל אחד מכם היה מקבל בצוות של חללית שטסה למאדים?' },
+  { id: 92, deck: 'humor', text: 'ספרו בדיחה קצרה או סיפור משעשע — אם בן/בת הזוג צוחקים, מגיע לכם חיבוק ניצחון!' },
+  { id: 93, deck: 'humor', text: 'כל אחד צריך להמציא מכונה דמיונית שתחסוך לו עשר דקות בכל יום. השני מנחש איזו מכונה המציא ולמה.' },
+  { id: 94, deck: 'humor', text: 'שחקו שתי דמויות בדיוניות שנתקעו יחד בתור ארוך במיוחד. יש לכם 30 שניות לאלתר שיחה מצחיקה בלי לשבור את הדמות.' },
+  { id: 95, deck: 'humor', text: 'אם הבית שלנו היה מסעדת שף – איך היו קוראים למנת הדגל שלנו?' },
+  { id: 96, deck: 'humor', text: 'עשו יחד פוזה של תמונת מגזין אופנה והחזיקו אותה 10 שניות!' },
+  { id: 97, deck: 'humor', text: 'מה הדבר הכי מצחיק שחשבתם עליו השבוע ולא הספקתם לספר?' },
+  { id: 98, deck: 'humor', text: 'זמזמו שיר מוכר (20 שניות) ובדקו כמה מהר בן/בת הזוג מזהים אותו.' },
+  { id: 99, deck: 'humor', text: 'איזו כותרת ראשית של עיתון הייתם נותנים לשעה האחרונה שעברתם יחד? נסו לכתוב גם כותרת משנה משעשעת.' },
+  { id: 100, deck: 'humor', text: 'בתוך 30 שניות מנו לסירוגין שישה פרטים משותפים עליכם, שאפילו חברים טובים שלכם כנראה לא היו מנחשים.' },
+  { id: 101, deck: 'humor', text: 'הפיקו תשדיר שירות של 20 שניות: ״איך יוצאים לנופש זוגי ולא שוכחים את הדבר החשוב ביותר״. מותר להגזים ככל האפשר.' },
+  { id: 102, deck: 'humor', text: 'נסו לכתוב עם האצבע מילה אחת על גב כף היד של בן/בת הזוג — שינחשו מה כתבתם!' },
+  { id: 103, deck: 'humor', text: 'אם היו מזמינים את שניכם להרצאה בת עשר דקות על נושא שאיש בעולם לא חשב שהוא חשוב, מה הייתה כותרת ההרצאה?' },
+  { id: 104, deck: 'humor', text: 'עשו ״כיף״ (High Five) יצירתי בשלושה שלבים!' },
+  { id: 105, deck: 'humor', text: 'הגישו תחזית מזג אוויר דמיונית לצימר שלכם עד סוף הערב, אבל כל מונחי מזג האוויר חייבים להיות שמות של מאכלים.' },
+  { id: 106, deck: 'humor', text: 'בספירה עד שלוש, אמרו כל אחד מילה אחת לכותרת של סיפור משפחתי מצחיק. האם שתי המילים יוצרות יחד כותרת הגיונית?' },
+  { id: 107, deck: 'humor', text: 'הגישו לבן/בת הזוג כוס מים או קפה כאילו אתם מלצרים במסעדת 5 כוכבים.' },
+  { id: 108, deck: 'humor', text: 'מה הכישרון הכי מיותר אך משעשע שיש לאחד מכם?' },
+  { id: 109, deck: 'humor', text: 'תנו 3 שמות חיבה חדשים ומצחיקים זה לזו.' },
+  { id: 110, deck: 'humor', text: 'נסו לדבר 30 שניות בלי להשתמש באות מ׳!' },
+  { id: 111, deck: 'humor', text: 'סיימו את הקלף בריקוד ניצחון קטן של 10 שניות בסלון!' },
+
+  // 4. מחווה קטנה (37)
+  { id: 112, deck: 'gesture', text: 'הכינו עכשיו לבן/בת הזוג כוס שתייה חמה או קרה בדיוק כמו שהם אוהבים.' },
+  { id: 113, deck: 'gesture', text: 'כתבו הודעת וואטסאפ קצרה ומפתיעה לבן/בת הזוג שיקראו מחר בבוקר.' },
+  { id: 114, deck: 'gesture', text: 'בחרו שיר שמזכיר לכם את בן/בת הזוג והשמיעו אותו עכשיו ברקע.' },
+  { id: 115, deck: 'gesture', text: 'העניקו אחד לשני ״כתב פטור מלכותי״ ממשימה דמיונית ומגוחכת במיוחד. חובה לנמק בלשון רשמית וחגיגית.' },
+  { id: 116, deck: 'gesture', text: 'הרימו כוס וכל אחד מכריז על רגע משותף מצחיק שהיה ראוי להיכנס לספר ההיסטוריה הפרטי שלכם. מותר להשתמש ב־12 מילים בלבד.' },
+  { id: 117, deck: 'gesture', text: 'בחרו תמונה משותפת ישנה, בלי להראות אותה מיד. תארו מה קרה דקה לפני הצילום, והשני ינסה לזהות באיזו תמונה מדובר.' },
+  { id: 118, deck: 'gesture', text: 'קבעו יחד עכשיו ביומן דייט זוגי קטן לשבוע הקרוב — אפילו של חצי שעה.' },
+  { id: 119, deck: 'gesture', text: 'כל אחד בוחר חפץ שנמצא בחדר ומעניק אותו לשני כ״פרס יוקרתי״, עם נימוק חגיגי ומשעשע במיוחד.' },
+  { id: 120, deck: 'gesture', text: 'ספרו לבן/בת הזוג על 3 דברים שאתם מעריכים בהם מהשבוע האחרון.' },
+  { id: 121, deck: 'gesture', text: 'המציאו שובר מתנה דמיוני לשירות שאי אפשר לקנות בכסף. תנו לו שם, תוקף ותנאי מימוש משעשע.' },
+  { id: 122, deck: 'gesture', text: 'תנו לצימר שלכם שם רשמי של מלון בוטיק מפואר, על סמך שלושה פרטים קטנים שאתם מבחינים בהם בחדר.' },
+  { id: 123, deck: 'gesture', text: 'אם יכולתם להזמין שירות קסמים אחד לבוקר שאחרי הנופש, איזה שירות הייתם בוחרים להעניק זה לזו?' },
+  { id: 124, deck: 'gesture', text: 'הביאו פינוק מתוק או פרי חתוך לשניכם לנשנוש משותף.' },
+  { id: 125, deck: 'gesture', text: 'כתבו פתק קטן על נייר והחביאו אותו בתיק, בארנק או ליד המפתחות של בן/בת הזוג.' },
+  { id: 126, deck: 'gesture', text: 'תכננו פיקניק דמיוני במקום בלתי אפשרי. כל אחד מוסיף פריט אחד משונה שחייבים לקחת, והאחר מסביר למה הוא חיוני.' },
+  { id: 127, deck: 'gesture', text: 'בחרו עבור השני מנגינת כניסה שתתנגן בכל פעם שהוא נכנס לחדר כמו דמות חשובה בסרט. הסבירו את הבחירה.' },
+  { id: 128, deck: 'gesture', text: 'הגישו לבן/בת הזוג חיבוק עוטף של 20 שניות בלי למהר לשום מקום.' },
+  { id: 129, deck: 'gesture', text: 'הזכירו לבן/בת הזוג סיבה אחת שבגללה אתם שמחים שבניתם יחד בית.' },
+  { id: 130, deck: 'gesture', text: 'המציאו לארוחת הבוקר בצימר תפריט מפואר בן שלוש מנות. לכל מנה תנו שם מצחיק שמתייחס לסיפור משותף.' },
+  { id: 131, deck: 'gesture', text: 'מניחים את הטלפון בצד עד שמתחשק לשלוף עוד קלף. אין טיימר ואין צורך לעשות דבר נוסף. המשחק ימשיך מאותה נקודה.' },
+  { id: 132, deck: 'gesture', text: 'הודו לבן/בת הזוג על משהו יומיומי שלפעמים נלקח כמובן מאליו.' },
+  { id: 133, deck: 'gesture', text: 'ספרו על רגע קטן ומשעשע מהימים האחרונים. השני צריך לשאול שאלה אחת מקורית שתהפוך את הסיפור למעניין עוד יותר.' },
+  { id: 134, deck: 'gesture', text: 'הפתיעו את בן/בת הזוג בנשיקה על המצח או על הלחי עם חיוך גדול.' },
+  { id: 135, deck: 'gesture', text: 'בחרו בילוי חדש שלפני חמש שנים בכלל לא הייתם מעלים בדעתכם לנסות. אין צורך לתכנן או להתחייב, רק לדמיין.' },
+  { id: 136, deck: 'gesture', text: 'הכינו רשימה של 3 מקומות חדשים שתרצו לבקר בהם יחד.' },
+  { id: 137, deck: 'gesture', text: 'בחרו תכונה של השני שאתם מעריכים היום מסיבה אחרת לגמרי מזו שבגללה הערכתם אותה בשנים הראשונות.' },
+  { id: 138, deck: 'gesture', text: 'בחרו פינה בחדר הצימר והמציאו לה שם וסיפור רקע של אתר תיירות אגדי. השני מוסיף עובדה היסטורית מומצאת.' },
+  { id: 139, deck: 'gesture', text: 'שאלו: ״מה הדבר שהכי בא לך שנעשה בסוף השבוע הזה?״' },
+  { id: 140, deck: 'gesture', text: 'כל אחד בוחר חפץ בחדר ומספר בשמו, בגוף ראשון, על מה שראה מאז שהגעתם לצימר. נסו לגרום לשני לצחוק.' },
+  { id: 141, deck: 'gesture', text: 'ספרו לבן/בת הזוג על רגע מהשבוע שבו חשבתם עליהם באמצע היום.' },
+  { id: 142, deck: 'gesture', text: 'בחרו זיכרון משותף שאפשר לתאר כמו צילום אחד. תארו רק את מה שרואים בתמונה הדמיונית, והשני צריך לנחש מתי זה קרה.' },
+  { id: 143, deck: 'gesture', text: 'העניקו לבן/בת הזוג 2 דקות של פינוק לבחירתם החופשית!' },
+  { id: 144, deck: 'gesture', text: 'כל אחד מעניק לערב הזה שם קוד סודי. נסו לבחור שם שתזכרו גם בעוד עשר שנים ותדעו בדיוק לאיזה ערב הוא מתייחס.' },
+  { id: 145, deck: 'gesture', text: 'המציאו מתנה דמיונית שערכה אפס שקלים אבל עשויה לשמח את השני. מה היא, ואיך הייתם אורזים אותה?' },
+  { id: 146, deck: 'gesture', text: 'החזיקו ידיים למשך שני הקלפים הבאים ברצף.' },
+  { id: 147, deck: 'gesture', text: 'כל אחד מנסח משפט שהיה יכול להופיע על שלט הכניסה לצימר שלכם. השני מוסיף שורת סיום שהופכת אותו למצחיק.' },
+  { id: 148, deck: 'gesture', text: 'בחרו קלף אחד ששיחקתם עד עכשיו והייתם רוצים לזכור מהערב הזה. אפשר להגיד רק את מספר הקלף, בלי להסביר.' },
+
+  // 5. קרוב ללב (73)
+  { id: 149, deck: 'closeness', text: 'הביטו זה בעיניים של זו בשקט מוחלט למשך 45 שניות, תוך כדי החזקת ידיים.' },
+  { id: 150, deck: 'closeness', text: 'חיבוק ארוך ועמוק (30 שניות): הצמידו לב אל לב ונשמו יחד באותו קצב.' },
+  { id: 151, deck: 'closeness', text: 'לחשו באוזן של בן/בת הזוג דבר אחד שאתם אוהבים ונמשכים אליו בהם.' },
+  { id: 152, deck: 'closeness', text: 'מגע בעיניים עצומות (דקה): אחד עוצם עיניים, השני מעביר מגע רך במקומות לא צפויים (פנים, צוואר, פרק היד, כתף) — המטרה היא להפתיע בקצב ובמיקום.' },
+  { id: 153, deck: 'closeness', text: 'נשיקה איטית ומתמשכת (20 שניות) ללא מילים לפני ואחרי.' },
+  { id: 154, deck: 'closeness', text: 'שבו קרוב מאוד (ברך נוגעת בברך) וספרו מתי הרגשתם הכי קרובים אליי לאחרונה.' },
+  { id: 155, deck: 'closeness', text: 'מבחן הרגישות (45 שניות): העבירו קצות אצבעות בקו איטי מאוד מהעורף, לאורך הזרוע ועד קצות האצבעות — ועצרו בכל נקודה שגורמת לצמרמורת.' },
+  { id: 156, deck: 'closeness', text: 'הצמידו מצח אל מצח למשך 30 שניות ועצמו עיניים יחד.' },
+  { id: 157, deck: 'closeness', text: 'נשקו בעדינות את צוואר בן/בת הזוג או את קו הלסת למשך 20 שניות.' },
+  { id: 158, deck: 'closeness', text: 'הניחו יד חמה על מרכז החזה (הלב) של בן/בת הזוג והרגישו את הנשימה שלהם.' },
+  { id: 159, deck: 'closeness', text: 'התכרבלו יחד בתנוחה הכי נוחה וקרובה על הספה למשך 2 דקות.' },
+  { id: 160, deck: 'closeness', text: 'ספרו לבן/בת הזוג איזה סוג של מגע תמיד ממיס אתכם וגורם לכם להירגע.' },
+  { id: 161, deck: 'closeness', text: 'ריקוד סלואו ביתי (דקה שלמה): עמדו קרוב, חבקו והתנועעו יחד אפילו בלי מוזיקה.' },
+  { id: 162, deck: 'closeness', text: 'מסלול נשיקות איטי (45 שניות): התחילו בנשיקה על פרק כף היד, התקדמו לאט לאורך האמה, הכתף וקו הצוואר — בקצב איטי כפול ממה שרגילים.' },
+  { id: 163, deck: 'closeness', text: 'השעינו ראש על הכתף של בן/בת הזוג למשך דקה ותיהנו מהשקט המשותף.' },
+  { id: 164, deck: 'closeness', text: 'ספרו על רגע אינטימי או רומנטי שלנו שנשאר לכם חם בלב.' },
+  { id: 165, deck: 'closeness', text: 'חיבוק מאחור + לחישה קרובה (45 שניות): עטפו מאחור, הצמידו לחי אל לחי ולחשו באוזן מה הכי מושך אתכם אצל בן/בת הזוג ברגע הזה.' },
+  { id: 166, deck: 'closeness', text: 'כתובת סודית על העור (45 שניות): כתבו עם קצה האצבע מילה אחת של אהבה או תשוקה על הגב או העורף — והשני מנסה לנחש לפי התחושה.' },
+  { id: 167, deck: 'closeness', text: 'שאלו בקול רך: ״איפה הכי נעים לך שאגע או אלטף אותך עכשיו?״ — ובצעו למשך דקה.' },
+  { id: 168, deck: 'closeness', text: 'ריקוד אצבעות (30 שניות): שלבו אצבעות ו״שוחחו״ רק דרך לחיצות, ליטופי אגודל ומשיכות קלות — בלי להוציא הגה.' },
+  { id: 169, deck: 'closeness', text: 'תנו 3 נשיקות רכות במקומות שונים בפנים (מצח, לחי, שפתיים).' },
+  { id: 170, deck: 'closeness', text: 'התקרבו עד מרחק נשימה למשך 20 שניות לפני הנשיקה.' },
+  { id: 171, deck: 'closeness', text: 'ספרו לבן/בת הזוג מה גורם לכם להרגיש הכי בטוחים ואהובים בקשר שלנו.' },
+  { id: 172, deck: 'closeness', text: 'נשימה חמה על העור (30 שניות): קרבו את השפתיים סנטימטר אחד מהצוואר או מפרק כף היד של בן/בת הזוג ותנו לחום הנשימה ללטף לפני המגע.' },
+  { id: 173, deck: 'closeness', text: 'השלימו את המשפט בקול רך: ״כשאני קרוב/ה אליך ככה, אני מרגיש/ה...״' },
+  { id: 174, deck: 'closeness', text: 'משיכה קרובה והשהיה (30 שניות): משכו את בן/בת הזוג אליכם מהמותניים, הצמידו גוף אל גוף וחכו 15 שניות של ציפייה לפני הנשיקה.' },
+  { id: 175, deck: 'closeness', text: 'העבירו יד מלטפת לאורך הגב העליון של בן/בת הזוג בתנועות איטיות (דקה).' },
+  { id: 176, deck: 'closeness', text: 'גלו לבן/בת הזוג מחשבה רומנטית שעברה לכם בראש הערב.' },
+  { id: 177, deck: 'closeness', text: 'נשקו בעדינות את פרק כף היד הפנימי של בן/בת הזוג.' },
+  { id: 178, deck: 'closeness', text: 'שבו גב אל גב למשך 30 שניות, ואז הסתובבו לחיבוק גדול.' },
+  { id: 179, deck: 'closeness', text: 'החמיאו לבן/בת הזוג על המראה החיצוני שלהם הערב במבט אוהב.' },
+  { id: 180, deck: 'closeness', text: 'גב אל חזה (דקה שלמה): שבו כשאחד נשען לאחור לתוך החיבוק של השני, שמקיף אותו/ה ומלטף לאט את הזרועות, הכתפיים והצוואר.' },
+  { id: 181, deck: 'closeness', text: 'ספרו: מה הפנטזיה הרומנטית או החופשה הזוגית שהכי הייתם רוצים שנממש?' },
+  { id: 182, deck: 'closeness', text: 'עצמו עיניים ותנו לבן/בת הזוג להוביל מגע רך ונעים למשך דקה שלמה.' },
+  { id: 183, deck: 'closeness', text: 'הובלה במגע בלבד (45 שניות): הניחו יד על עורף או מותן בן/בת הזוג והובילו אותם בעדינות בתנועה איטית בחדר בלי מילים.' },
+  { id: 184, deck: 'closeness', text: 'לחשו לבן/בת הזוג תודה אחת עמוקה על מי שהם בשבילכם.' },
+  { id: 185, deck: 'closeness', text: 'נשיקה עדינה על הכתף או העורף למשך 15 שניות.' },
+  { id: 186, deck: 'closeness', text: 'ספרו מהי שפת האהבה העיקרית שלכם (מילים, מגע, זמן איכות, מחוות או מתנות).' },
+  { id: 187, deck: 'closeness', text: 'סלואו צמוד ללא מרחק (דקה שלמה): הצמידו מצח אל מצח, ידיים על המותניים או העורף, והתנועעו יחד צמודים כאילו אין אף אחד בעולם.' },
+  { id: 188, deck: 'closeness', text: 'העבירו אצבעות רכות דרך השיער של בן/בת הזוג מהמצח אחורה (דקה).' },
+  { id: 189, deck: 'closeness', text: 'אמרו לבן/בת הזוג 3 מילים שמתארות את החיבור ביניכם.' },
+  { id: 190, deck: 'closeness', text: 'שבו צמודים כשהראש של אחד מכם מונח בחיקו של השני למשך 2 דקות.' },
+  { id: 191, deck: 'closeness', text: 'נשיקה ארוכה ורומנטית שמרגישה כמו הנשיקה הראשונה שלנו.' },
+  { id: 192, deck: 'closeness', text: 'ספרו על רגע שבו התאהבתם בבן/בת הזוג מחדש.' },
+  { id: 193, deck: 'closeness', text: 'לטפו בעדינות את הברך והירך החיצונית של בן/בת הזוג תוך כדי שיחה קרובה.' },
+  { id: 194, deck: 'closeness', text: 'הביטו בשפתיים ובעיניים של בן/בת הזוג למשך 20 שניות וחייכו.' },
+  { id: 195, deck: 'closeness', text: 'מגע של ניגודים (45 שניות): שלבו מגע רחב וחם של כל כף היד על הגב או הירך, ומיד אחריו מגע קליל כנוצה של קצות האצבעות.' },
+  { id: 196, deck: 'closeness', text: 'ספרו מה הדבר שהכי מושך אתכם באנרגיה ובנוכחות של בן/בת הזוג.' },
+  { id: 197, deck: 'closeness', text: 'נשיקה על ״נקודת תורפה״ (20 שניות): נשקו בדיוק במקום שבו בן/בת הזוג הכי רגישים למגע (מאחורי האוזן, עצם הבריח, או שקע הצוואר).' },
+  { id: 198, deck: 'closeness', text: 'תנו חיבוק ״דוב״ חזק ומלא אהבה, ואז הרפו לחיבוק רך.' },
+  { id: 199, deck: 'closeness', text: 'שאלו: ״איך היית רוצה שנסיים את הערב הזה יחד?״' },
+  { id: 200, deck: 'closeness', text: 'לטפו בעדינות את אוזן וצוואר בן/בת הזוג למשך 30 שניות.' },
+  { id: 201, deck: 'closeness', text: 'קצב הדופק (45 שניות): הצמידו אוזן או כף יד לחזה של בן/בת הזוג, הקשיבו לדופק וסנכרנו את הליטוף שלכם בדיוק לפי הקצב שלו.' },
+  { id: 202, deck: 'closeness', text: 'אמרו בקול רם משפט אחד של הערצה לבן/בת הזוג.' },
+  { id: 203, deck: 'closeness', text: 'חתימה אישית (30 שניות): המציאו רצף מגע בן 3 תנועות (למשל: ליטוף עורף ← לחיצה בכתף ← נשיקה בצוואר) שיהפוך ל״חתימה הסודית״ שלכם.' },
+  { id: 204, deck: 'closeness', text: 'נשיקה עדינה על העפעפיים העצומות של בן/בת הזוג.' },
+  { id: 205, deck: 'closeness', text: 'ספרו על איכות אחת של הזוגיות שלנו שאתם מאחלים לעצמכם גם בעוד 20 שנה.' },
+  { id: 206, deck: 'closeness', text: 'החזיקו ידיים והניחו אותן על הלב של אחד מכם למשך 30 שניות.' },
+  { id: 207, deck: 'closeness', text: 'לטפו בעדינות את המותן והגב התחתון של בן/בת הזוג למשך דקה.' },
+  { id: 208, deck: 'closeness', text: 'לחשו לבן/בת הזוג מה הכי עושה לכם פרפרים בבטן.' },
+  { id: 209, deck: 'closeness', text: 'התקרבו לחיבוק ישיבה צמוד למשך 2 דקות ללא מילים.' },
+  { id: 210, deck: 'closeness', text: 'נשקו זה את זו נשיקה מתוקה של ״אני אוהב/ת אותך״.' },
+  { id: 211, deck: 'closeness', text: 'ספרו על רגע השבוע שבו הרגשתם הכי מחוברים רגשית.' },
+  { id: 212, deck: 'closeness', text: 'העבירו יד חמה לאורך כל הזרוע מהכתף ועד קצות האצבעות (3 פעמים).' },
+  { id: 213, deck: 'closeness', text: 'הביטו זה בזו וגלו: על מה אתם מודים לבן/בת הזוג ממש עכשיו?' },
+  { id: 214, deck: 'closeness', text: 'חבקו את הצוואר של בן/בת הזוג בעדינות והצמידו מבטים.' },
+  { id: 215, deck: 'closeness', text: 'נשיקות בהילוך איטי (30 שניות): תנו 3 נשיקות רכות במקומות שכלל לא מנשקים ביום־יום (גב היד, הכתף, מאחורי האוזן) עם עצירה של 5 שניות בין אחת לשנייה.' },
+  { id: 216, deck: 'closeness', text: 'הישענו זה על זו ותנו לגוף להירגע לחלוטין למשך דקה.' },
+  { id: 217, deck: 'closeness', text: 'לחשו סוד קטן או משאלה זוגית שתשמחו להגשים בקרוב.' },
+  { id: 218, deck: 'closeness', text: 'לטפו בעדינות את פנים בן/בת הזוג בשתי כפות הידיים.' },
+  { id: 219, deck: 'closeness', text: 'הבטיחו זה לזו להתחיל את מחר בבוקר בחיבוק לפני שיוצאים מהמיטה.' },
+  { id: 220, deck: 'closeness', text: 'נשיקה עמוקה ואוהבת לחיזוק הקשר הערב.' },
+  { id: 221, deck: 'closeness', text: 'הניחו יד על הכתף של בן/בת הזוג ואמרו: ״אני תמיד כאן איתך״.' },
+
+  // 6. עיסוי ופינוק (29)
+  { id: 222, deck: 'massage', text: 'עיסוי כתפיים ושכמות (2 דקות): עמדו מאחורי בן/בת הזוג ולחצו בעדינות עם כריות האגודלים בתנועות מעגליות מצידי הצוואר החוצה.' },
+  { id: 223, deck: 'massage', text: 'עיסוי קרקפת מרגיע (2 דקות): העבירו את כריות האצבעות בתנועות סיבוביות איטיות מהרקות אל מרכז הראש.' },
+  { id: 224, deck: 'massage', text: 'עיסוי כפות ידיים (2 דקות): אחזו בכף היד של בן/בת הזוג, עסו עם האגודל את מרכז כף היד ומתחו בעדינות כל אצבע.' },
+  { id: 225, deck: 'massage', text: 'עיסוי כפות רגליים מפנק (3 דקות): הניחו כף רגל על הברכיים, לחצו בעדינות עם האגודלים לאורך קשת הסוליה וסיימו בעיסוי העקב והאצבעות.' },
+  { id: 226, deck: 'massage', text: 'עיסוי עורף ובסיס הגולגולת (2 דקות): תמכו במצח ביד אחת, וביד השנייה עסו בעדינות את שרירי העורף מלמטה למעלה.' },
+  { id: 227, deck: 'massage', text: 'עיסוי גב עליון משחרר (3 דקות): לחצו עם כריות כף היד בתנועות ארוכות ואיטיות משני צידי עמוד השדרה (לא על העצם).' },
+  { id: 228, deck: 'massage', text: 'עיסוי רקות ומצח (90 שניות): הניחו אצבעות במרכז המצח והחליקו החוצה לכיוון הרקות בתנועות מעגליות רכות.' },
+  { id: 229, deck: 'massage', text: 'עיסוי אמות ופרקי ידיים (2 דקות): עסו את השרירים שבין המרפק לפרק כף היד בתנועות סחיטה עדינות ואיטיות.' },
+  { id: 230, deck: 'massage', text: 'עיסוי ״הפסקת נשימה״ (2 דקות): בכל פעם שבן/בת הזוג מוציאים אוויר בנשיפה ארוכה, העמיקו את הלחיצה בכתפיים או בגב — וכששואפים, הרפו למגע מרחף.' },
+  { id: 231, deck: 'massage', text: 'עיסוי פנים ולסתות (90 שניות): עסו בעדינות בתנועות סיבוביות את שרירי הלסת והלחיים לשחרור מתחים.' },
+  { id: 232, deck: 'massage', text: 'עיסוי מהגב התחתון ומטה (2 דקות): הניחו שתי כפות ידיים חמות ועסו בתנועות לישה עגולות, איטיות ועמוקות את האגן וצידי המותן — משחרר מתחים ומחמם את כל הגוף.' },
+  { id: 233, deck: 'massage', text: 'עיסוי אוזניים ותנוכים (60 שניות): עסו בעדינות רבה את אפרכסת האוזן והתנוך בין האגודל לאצבע.' },
+  { id: 234, deck: 'massage', text: 'עיסוי שוקיים מרגיע (2 דקות): עסו את שריר השוק מאחורה בתנועות לישה איטיות מלמטה למעלה.' },
+  { id: 235, deck: 'massage', text: 'לחיצות עמוקות ומרגיעות מהירכיים ומעלה עד הגב התחתון (2 דקות): הפעילו לחץ יציב וחם עם כריות כף היד וגלגלו בעדינות בתנועות עוטפות וממיסות.' },
+  { id: 236, deck: 'massage', text: 'טקס כפות ידיים מלכותי (2 דקות): עטפו את כף היד בשתי הידיים, עסו כל מפרק בנפרד וסיימו בנשיקה רכה במרכז כף היד.' },
+  { id: 237, deck: 'massage', text: 'עיסוי קו הצוואר הקדמי ועצמות הבריח (90 שניות): העבירו קצות אצבעות רכות מצידי הצוואר מטה אל שקע עצם הבריח והחליקו החוצה אל הכתפיים.' },
+  { id: 238, deck: 'massage', text: 'שחרור רגליים אחרי יום ארוך (2 דקות): עסו בעדינות את גיד אכילס, הקרסול וכריות כף הרגל בתנועות סחיטה חמות ואיטיות.' },
+  { id: 239, deck: 'massage', text: 'עיסוי חזה ועצם הבריח (2 דקות): הניחו כף יד חמה במרכז החזה (אזור הלב) ועסו בתנועות מעגליות רחבות כלפי חוץ, לאורך עצמות הבריח ועד הכתפיים.' },
+  { id: 240, deck: 'massage', text: 'עיסוי שתי ידיים מסונכרן (2 דקות): הניחו שתי ידיים משני צידי הגב או הכתפיים ובצעו תנועות סימטריות ואיטיות יחד כמו גלים בים.' },
+  { id: 241, deck: 'massage', text: 'עיסוי ירכיים קדמיות (2 דקות): כשבן/בת הזוג יושבים או שוכבים בנוחות, עסו בתנועות לישה ארוכות וחמות לאורך הירך הקדמית — מהברך כלפי מעלה.' },
+  { id: 242, deck: 'massage', text: 'עיסוי שרירי הזרוע העליונה (2 דקות): עסו בעדינות את הכתף והזרוע העליונה בתנועות עוטפות.' },
+  { id: 243, deck: 'massage', text: 'עיסוי ״חם–קר״ (90 שניות): שפשפו את כפות הידיים חזק עד שהן לוהטות, הצמידו לשכמות או לגב התחתון והשאירו אותן שם ללא תנועה עד שהחום נספג.' },
+  { id: 244, deck: 'massage', text: 'רצף זורם מהירכיים ומעלה עד הגב (3 דקות): החליקו בתנועות ארוכות, עוטפות ורציפות מהירכיים האחוריות כלפי מעלה עד המותניים והגב התחתון.' },
+  { id: 245, deck: 'massage', text: 'עיסוי בטן מרגיע וממיס (90 שניות): הניחו שתי כפות ידיים חמות על הבטן ועסו בתנועות מעגליות איטיות ורכות עם כיוון השעון, בקצב של הנשימה.' },
+  { id: 246, deck: 'massage', text: 'עיסוי עם משוב בזמן אמת (2 דקות): בן/בת הזוג מכוונים אתכם רק במילים ״לאט יותר״, ״חזק יותר״ או ״בדיוק שם״ — בלי שתדברו.' },
+  { id: 247, deck: 'massage', text: 'עיסוי קו הצלעות והמותן (90 שניות): עסו בעדינות ובחום את צידי המותניים והצלעות התחתונות בתנועות ארוכות ומלטפות.' },
+  { id: 248, deck: 'massage', text: 'עיסוי פנים, עצמות לחיים וסנטר (2 דקות): כשראש בן/בת הזוג מונח בחיקכם, עסו בעדינות את המצח, עצמות הלחיים, הסנטר ושרירי הלסת.' },
+  { id: 249, deck: 'massage', text: 'עיסוי ״גוף קדמי מלא״ מעל הבגדים (3 דקות): מגע לחיצות עמוקות, חמות ועוטפות מהכתפיים, לאורך הזרועות, הצלעות והירכיים — להרגעת כל מערכת העצבים.' },
+  { id: 250, deck: 'massage', text: 'פינוק בחירה חופשית (3 דקות): בן/בת הזוג בוחרים בדיוק איפה ואיך בא להם עיסוי עכשיו!' }
+];
+
+/* ===================================================================
+   חלק 4 — מטא-דאטה מסווגת ל-250 הקלפים. ללא שינוי מהמקור.
+   =================================================================== */
+const CARD_META = {
+  1:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"travel_preference_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  2:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"personal_habit_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  3:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"creative_choice_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  4:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"food_drink_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  5:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"personal_habit_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  6:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"skill_activity_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  7:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"free_time_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  8:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"partner_trait_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  9:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"free_time_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  10:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"creative_choice_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  11:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"nostalgia_item_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  12:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"free_time_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  13:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"nostalgia_item_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  14:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"skill_activity_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  15:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"skill_activity_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  16:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"partner_trait_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  17:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"food_drink_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  18:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"personal_trait_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  19:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"future_vision",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  20:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"partner_trait_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  21:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"travel_preference_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  22:{type:"memory",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  23:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"creative_choice_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  24:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"personal_trait_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  25:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"travel_preference_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  26:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"personal_habit_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  27:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"gift_preference_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  28:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_identity_creative",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  29:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"personal_trait_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  30:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"skill_activity_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  31:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"food_drink_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  32:{type:"memory",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  33:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"personal_trait_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  34:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"secret_note_gift",statedDurationSec:null,needsReview:true,replayPolicy:"discovery"},
+  35:{type:"memory",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  36:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_identity_creative",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  37:{type:"guess",interaction:"guess_reveal",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_habit_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  38:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  39:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  40:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  41:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  42:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_inside_joke",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  43:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  44:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_soundtrack",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  45:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"relationship_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  46:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  47:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"meaningful_quote_memory",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  48:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  49:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"photo_memory",statedDurationSec:null,needsReview:true,replayPolicy:"discovery"},
+  50:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"relationship_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  51:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  52:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"relationship_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  53:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  54:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  55:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_milestone",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  56:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_milestone",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  57:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  58:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_habit_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  59:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  60:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"first_meeting_detail",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  61:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  62:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_story",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  63:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"relationship_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  64:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"nostalgia_item_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  65:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_habit_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  66:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_habit_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  67:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"nonverbal_connection_memory",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  68:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_milestone",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  69:{type:"humor",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_soundtrack",statedDurationSec:null,needsReview:true,replayPolicy:"evergreen"},
+  70:{type:"conversation",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"future_vision",statedDurationSec:null,needsReview:true,replayPolicy:"discovery"},
+  71:{type:"guess",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_guess",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  72:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_identity_creative",statedDurationSec:null,needsReview:true,replayPolicy:"discovery"},
+  73:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_habit_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  74:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"nonverbal_connection_memory",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  75:{type:"humor",interaction:"alternating",isPhysical:true,isTouchActivity:false,similarityGroup:"creative_improvisation",statedDurationSec:20,needsReview:false,replayPolicy:"evergreen"},
+  76:{type:"challenge",interaction:"both",isPhysical:true,isTouchActivity:false,similarityGroup:"eye_contact_challenge",statedDurationSec:45,needsReview:false,replayPolicy:"evergreen"},
+  77:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_identity_creative",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  78:{type:"challenge",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"word_constraint_challenge",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  79:{type:"humor",interaction:"individual",isPhysical:true,isTouchActivity:false,similarityGroup:"creative_improvisation",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  80:{type:"guess",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"rapid_preference_match",statedDurationSec:null,needsReview:true,replayPolicy:"evergreen"},
+  81:{type:"humor",interaction:"individual",isPhysical:false,isTouchActivity:false,similarityGroup:"creative_improvisation",statedDurationSec:20,needsReview:false,replayPolicy:"evergreen"},
+  82:{type:"challenge",interaction:"alternating",isPhysical:true,isTouchActivity:false,similarityGroup:"shared_memory_pantomime",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  83:{type:"humor",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  84:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"creative_improvisation",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  85:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  86:{type:"challenge",interaction:"alternating",isPhysical:true,isTouchActivity:false,similarityGroup:"laugh_challenge",statedDurationSec:20,needsReview:false,replayPolicy:"evergreen"},
+  87:{type:"humor",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_award",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  88:{type:"memory",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_inside_joke",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  89:{type:"challenge",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"word_constraint_challenge",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  90:{type:"humor",interaction:"both",isPhysical:true,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  91:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  92:{type:"humor",interaction:"individual",isPhysical:false,isTouchActivity:false,similarityGroup:"laugh_challenge",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  93:{type:"guess",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  94:{type:"humor",interaction:"both",isPhysical:true,isTouchActivity:false,similarityGroup:"creative_improvisation",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  95:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  96:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:false,similarityGroup:"physical_pose_dance",statedDurationSec:10,needsReview:false,replayPolicy:"evergreen"},
+  97:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"daily_moment_share",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  98:{type:"challenge",interaction:"alternating",isPhysical:true,isTouchActivity:false,similarityGroup:"musical_challenge",statedDurationSec:20,needsReview:false,replayPolicy:"evergreen"},
+  99:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"creative_improvisation",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  100:{type:"challenge",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"word_constraint_challenge",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  101:{type:"humor",interaction:"individual",isPhysical:true,isTouchActivity:false,similarityGroup:"creative_improvisation",statedDurationSec:20,needsReview:false,replayPolicy:"evergreen"},
+  102:{type:"guess",interaction:"individual",isPhysical:true,isTouchActivity:false,similarityGroup:"skin_writing_guess",statedDurationSec:null,needsReview:true,replayPolicy:"evergreen"},
+  103:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  104:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"physical_pose_dance",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  105:{type:"humor",interaction:"individual",isPhysical:false,isTouchActivity:false,similarityGroup:"creative_improvisation",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  106:{type:"challenge",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"word_constraint_challenge",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  107:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:false,similarityGroup:"food_drink_gesture",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  108:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"personal_trait_guess",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  109:{type:"humor",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_nickname",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  110:{type:"challenge",interaction:"individual",isPhysical:false,isTouchActivity:false,similarityGroup:"word_constraint_challenge",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  111:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:false,similarityGroup:"physical_pose_dance",statedDurationSec:10,needsReview:false,replayPolicy:"evergreen"},
+  112:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:false,similarityGroup:"food_drink_gesture",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  113:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:false,similarityGroup:"secret_note_gift",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  114:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:false,similarityGroup:"couple_soundtrack",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  115:{type:"humor",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  116:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:false,similarityGroup:"toast_celebration",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  117:{type:"guess",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"photo_memory",statedDurationSec:null,needsReview:true,replayPolicy:"discovery"},
+  118:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:false,similarityGroup:"future_date_planning",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  119:{type:"humor",interaction:"alternating",isPhysical:true,isTouchActivity:false,similarityGroup:"playful_award",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  120:{type:"gesture",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"appreciation_gratitude",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  121:{type:"humor",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  122:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  123:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"future_vision",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  124:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:false,similarityGroup:"food_drink_gesture",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  125:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:false,similarityGroup:"secret_note_gift",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  126:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  127:{type:"humor",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_soundtrack",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  128:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"couple_hug",statedDurationSec:20,needsReview:false,replayPolicy:"evergreen"},
+  129:{type:"gesture",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"appreciation_gratitude",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  130:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  131:{type:"pause",interaction:"both",isPhysical:true,isTouchActivity:false,similarityGroup:null,statedDurationSec:null,needsReview:true,replayPolicy:"evergreen"},
+  132:{type:"gesture",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"appreciation_gratitude",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  133:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"daily_moment_share",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  134:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  135:{type:"conversation",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"future_date_planning",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  136:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:false,similarityGroup:"future_date_planning",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  137:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"appreciation_gratitude",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  138:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  139:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"future_date_planning",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  140:{type:"humor",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"creative_improvisation",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  141:{type:"gesture",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"appreciation_gratitude",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  142:{type:"guess",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"photo_memory",statedDurationSec:null,needsReview:true,replayPolicy:"discovery"},
+  143:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"free_choice_pampering",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  144:{type:"humor",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_identity_creative",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  145:{type:"humor",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"playful_invention",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  146:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"hold_hands",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  147:{type:"humor",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"couple_identity_creative",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  148:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:null,statedDurationSec:null,needsReview:true,replayPolicy:"evergreen"},
+  149:{type:"challenge",interaction:"both",isPhysical:true,isTouchActivity:false,similarityGroup:"eye_contact_challenge",statedDurationSec:45,needsReview:false,replayPolicy:"evergreen"},
+  150:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"couple_hug",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  151:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:false,similarityGroup:"intimate_whisper",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  152:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"gentle_caress",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  153:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:20,needsReview:false,replayPolicy:"evergreen"},
+  154:{type:"conversation",interaction:"alternating",isPhysical:true,isTouchActivity:true,similarityGroup:"intimacy_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  155:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"gentle_caress",statedDurationSec:45,needsReview:false,replayPolicy:"evergreen"},
+  156:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"head_to_head_closeness",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  157:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:20,needsReview:false,replayPolicy:"evergreen"},
+  158:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"heartbeat_connection",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  159:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"couple_hug",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  160:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"intimacy_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  161:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"slow_dance_closeness",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  162:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:45,needsReview:false,replayPolicy:"evergreen"},
+  163:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"head_to_head_closeness",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  164:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"intimacy_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  165:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"couple_hug",statedDurationSec:45,needsReview:false,replayPolicy:"evergreen"},
+  166:{type:"guess",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"skin_writing_guess",statedDurationSec:45,needsReview:true,replayPolicy:"evergreen"},
+  167:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"free_choice_pampering",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  168:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"hold_hands",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  169:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  170:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:20,needsReview:true,replayPolicy:"evergreen"},
+  171:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"intimacy_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  172:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"sensory_anticipation",statedDurationSec:30,needsReview:true,replayPolicy:"evergreen"},
+  173:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"intimacy_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  174:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"couple_hug",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  175:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"gentle_caress",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  176:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"intimate_whisper",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  177:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  178:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"couple_hug",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  179:{type:"gesture",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"appreciation_gratitude",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  180:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"couple_hug",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  181:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"future_vision",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  182:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"gentle_caress",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  183:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"slow_dance_closeness",statedDurationSec:45,needsReview:false,replayPolicy:"evergreen"},
+  184:{type:"gesture",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"appreciation_gratitude",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  185:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:15,needsReview:false,replayPolicy:"evergreen"},
+  186:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"intimacy_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  187:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"slow_dance_closeness",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  188:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"gentle_caress",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  189:{type:"gesture",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"appreciation_gratitude",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  190:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"head_to_head_closeness",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  191:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  192:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"shared_memory_milestone",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  193:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"gentle_caress",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  194:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:false,similarityGroup:"eye_contact_challenge",statedDurationSec:20,needsReview:false,replayPolicy:"evergreen"},
+  195:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"gentle_caress",statedDurationSec:45,needsReview:false,replayPolicy:"evergreen"},
+  196:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"intimacy_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  197:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:20,needsReview:false,replayPolicy:"evergreen"},
+  198:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"couple_hug",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  199:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"future_date_planning",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  200:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"gentle_caress",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  201:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"heartbeat_connection",statedDurationSec:45,needsReview:false,replayPolicy:"evergreen"},
+  202:{type:"gesture",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"appreciation_gratitude",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  203:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"touch_signature_ritual",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  204:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  205:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"future_vision",statedDurationSec:null,needsReview:false,replayPolicy:"discovery"},
+  206:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"heartbeat_connection",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  207:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"gentle_caress",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  208:{type:"gesture",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"intimate_whisper",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  209:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"couple_hug",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  210:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  211:{type:"memory",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"intimacy_reflection",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  212:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"gentle_caress",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  213:{type:"gesture",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"appreciation_gratitude",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  214:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"couple_hug",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  215:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:30,needsReview:false,replayPolicy:"evergreen"},
+  216:{type:"activity",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"head_to_head_closeness",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  217:{type:"conversation",interaction:"alternating",isPhysical:false,isTouchActivity:false,similarityGroup:"intimate_whisper",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  218:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"gentle_caress",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  219:{type:"gesture",interaction:"both",isPhysical:false,isTouchActivity:false,similarityGroup:"future_vision",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  220:{type:"gesture",interaction:"both",isPhysical:true,isTouchActivity:true,similarityGroup:"soft_kiss",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  221:{type:"gesture",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"appreciation_gratitude",statedDurationSec:null,needsReview:false,replayPolicy:"evergreen"},
+  222:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_shoulders_neck",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  223:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_head_face",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  224:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_hands_arms",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  225:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_feet_legs",statedDurationSec:180,needsReview:false,replayPolicy:"evergreen"},
+  226:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_shoulders_neck",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  227:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_back_torso",statedDurationSec:180,needsReview:false,replayPolicy:"evergreen"},
+  228:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_head_face",statedDurationSec:90,needsReview:false,replayPolicy:"evergreen"},
+  229:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_hands_arms",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  230:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_shoulders_neck",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  231:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_head_face",statedDurationSec:90,needsReview:false,replayPolicy:"evergreen"},
+  232:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_lower_body",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  233:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_head_face",statedDurationSec:60,needsReview:false,replayPolicy:"evergreen"},
+  234:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_feet_legs",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  235:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_lower_body",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  236:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_hands_arms",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  237:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_shoulders_neck",statedDurationSec:90,needsReview:false,replayPolicy:"evergreen"},
+  238:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_feet_legs",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  239:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_front_torso",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  240:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_shoulders_neck",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  241:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_lower_body",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  242:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_hands_arms",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  243:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_back_torso",statedDurationSec:90,needsReview:true,replayPolicy:"evergreen"},
+  244:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_lower_body",statedDurationSec:180,needsReview:false,replayPolicy:"evergreen"},
+  245:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_front_torso",statedDurationSec:90,needsReview:false,replayPolicy:"evergreen"},
+  246:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_back_torso",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  247:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_front_torso",statedDurationSec:90,needsReview:false,replayPolicy:"evergreen"},
+  248:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_head_face",statedDurationSec:120,needsReview:false,replayPolicy:"evergreen"},
+  249:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"massage_front_torso",statedDurationSec:180,needsReview:false,replayPolicy:"evergreen"},
+  250:{type:"activity",interaction:"individual",isPhysical:true,isTouchActivity:true,similarityGroup:"free_choice_pampering",statedDurationSec:180,needsReview:false,replayPolicy:"evergreen"}
+};
+
+function validateCardMetadata(){
+  const validTypes = new Set(['guess','memory','conversation','humor','challenge','gesture','activity','pause']);
+  const validInteractions = new Set(['individual','both','alternating','guess_reveal']);
+  const metaKeys = Object.keys(CARD_META).map(Number);
+  if (ALL_CARDS.length !== 250 || metaKeys.length !== 250){
+    console.warn('Metadata count mismatch:', ALL_CARDS.length, metaKeys.length); return false;
+  }
+  const seen = new Set();
+  for (const card of ALL_CARDS){
+    if (seen.has(card.id) || card.id < 1 || card.id > 250){ console.warn('Bad card id', card.id); return false; }
+    seen.add(card.id);
+    const m = CARD_META[card.id];
+    if (!m){ console.warn('Missing meta', card.id); return false; }
+    if (!validTypes.has(m.type) || !validInteractions.has(m.interaction)){ console.warn('Bad enum', card.id); return false; }
+    if (typeof m.isPhysical !== 'boolean' || typeof m.isTouchActivity !== 'boolean' || typeof m.needsReview !== 'boolean'){ console.warn('Bad bool', card.id); return false; }
+    if (m.similarityGroup !== null && typeof m.similarityGroup !== 'string'){ console.warn('Bad group', card.id); return false; }
+    if (m.statedDurationSec !== null && (typeof m.statedDurationSec !== 'number' || m.statedDurationSec <= 0)){ console.warn('Bad duration', card.id); return false; }
+  }
+  return true;
+}
+
+/* ===================================================================
+   חלק 5 — מנוע המשחק
+   נשען על CARD_META: type, interaction, isTouchActivity,
+   similarityGroup, statedDurationSec, replayPolicy.
+   =================================================================== */
+const MEMORY_STORAGE_KEY = 'al_oto_gal_couple_memory_v3';
+const SAVE_VERSION = 4;
+
+/* --- פרמטרים ניתנים לכוונון -------------------------------------- */
+const ROUND_MIX = { talk:0.35, play:0.15, care:0.12, touch:0.38 };
+const REPLAY = {
+  evergreenCooldown: 1,   // כמה סיבובים לפני שפעילות חווייתית זכאית לחזור
+  favoriteCooldown: 3,    // קלף גילוי מועדף זכאי לחזור אחרי כך וכך סיבובים
+  minGroupGap: 3          // מרחק מינימלי בין שתי משימות מאותה similarityGroup
+};
+
+/* --- אחסון עם נפילה רכה ------------------------------------------- */
+const Store = (()=>{
+  let ok = true, mem = null, warned = false;
+  try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); }
+  catch(e){ ok = false; }
+  function warn(){
+    if (warned) return; warned = true;
+    showToast('הדפדפן חוסם שמירה מקומית — ההתקדמות תישמר רק עד סגירת החלון');
+  }
+  return {
+    available: () => ok,
+    get(){ if (ok){ try { return localStorage.getItem(MEMORY_STORAGE_KEY); } catch(e){ ok=false; warn(); } } return mem; },
+    set(v){ mem = v; if (ok){ try { localStorage.setItem(MEMORY_STORAGE_KEY, v); return true; } catch(e){ ok=false; warn(); } } else warn(); return false; },
+    clear(){ mem = null; if (ok){ try { localStorage.removeItem(MEMORY_STORAGE_KEY); } catch(e){} } }
+  };
+})();
+
+/* --- מצב המשחק ---------------------------------------------------- */
+let gameState = {
+  partner1:'', partner2:'',
+  soundEnabled:true,
+  isAnimatingCard:false,
+  favoriteCardIds:new Set(),
+  cardStatus:{},     // id -> { state:'done'|'deferred'|'retired', timesPlayed, lastRound }
+  roundNumber:0,
+  active:null        // { mode, deckId, target, completed, queue:[id], pos, turnIndex, revealed }
+};
+
+function statusOf(id){ return gameState.cardStatus[id] || null; }
+function setStatus(id, state, countPlay){
+  const prev = gameState.cardStatus[id] || { state:null, timesPlayed:0, lastRound:0 };
+  gameState.cardStatus[id] = {
+    state,
+    timesPlayed: prev.timesPlayed + (countPlay ? 1 : 0),   // נספר רק בהשלמה בפועל
+    lastRound: gameState.roundNumber
+  };
+}
+function cardById(id){ return ALL_CARDS.find(c => c.id === id); }
+function currentCard(){
+  const a = gameState.active;
+  return a && a.pos < a.queue.length ? cardById(a.queue[a.pos]) : null;
+}
+
+/* --- עזרי ממשק ----------------------------------------------------- */
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg; t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 3000);
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function shuffleArray(arr){
+  const c = [...arr];
+  for (let i=c.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [c[i],c[j]]=[c[j],c[i]]; }
+  return c;
+}
+function showScreen(id){
+  stopTimerInterval();                       // טיימר נעצר במעבר מסך
+  ['names-screen','welcome-screen','game-screen','summary-screen'].forEach(s=>{
+    document.getElementById(s).classList.toggle('active', s === id);
+  });
+  const sc = document.querySelector('#'+id+' .scroller');
+  if (sc) sc.scrollTop = 0;
+}
+
+/* --- שמות ---------------------------------------------------------- */
+function openNamesScreen(){
+  document.getElementById('input-partner-1').value = gameState.partner1 || '';
+  document.getElementById('input-partner-2').value = gameState.partner2 || '';
+  showScreen('names-screen');
+}
+function submitCoupleNames(){
+  gameState.partner1 = document.getElementById('input-partner-1').value.trim() || 'בן/בת זוג א׳';
+  gameState.partner2 = document.getElementById('input-partner-2').value.trim() || 'בן/בת זוג ב׳';
+  persist();
+  goHome();
+}
+function turnName(){
+  const a = gameState.active;
+  const i = a ? a.turnIndex : 0;
+  return (i % 2 === 0) ? (gameState.partner1 || 'בן/בת זוג א׳') : (gameState.partner2 || 'בן/בת זוג ב׳');
+}
+
+/* --- סיווג לדליים לפי CARD_META ------------------------------------ */
+function bucketOf(card){
+  const m = CARD_META[card.id];
+  if (!m) return 'talk';
+  if (m.isTouchActivity) return 'touch';                        // מגע — לפי הסיווג, לא לפי החפיסה
+  if (m.type === 'gesture' || m.type === 'activity' || m.type === 'pause') return 'care';
+  if (m.type === 'humor' || m.type === 'challenge') return 'play';
+  return 'talk';                                                // guess / memory / conversation
+}
+
+/* קלפים שחייבים מקום מינימלי בסיבוב — הם מתייחסים למה שכבר שוחק.
+   קלף 148 מבקש לבחור קלף מהערב, ולכן אין לו משמעות לפני שיש מה לבחור. */
+const MIN_POSITION = { 148: 12 };
+function minPosOf(card){ return MIN_POSITION[card.id] || 0; }
+function positionOk(card, pos1){ return pos1 >= minPosOf(card); }
+
+/* --- זכאות לשליפה --------------------------------------------------- */
+function isEligible(card, opts){
+  const st = statusOf(card.id);
+  if (st && st.state === 'retired') return false;   // הוסר ביוזמת המשתתפים
+  // חפיסת המועדפים היא בחירה מפורשת — כללי הגיוון לא חלים עליה
+  if (opts && opts.favoritesMode) return true;
+  if (!st) return true;                       // מעולם לא שוחק
+  if (st.state === 'deferred') return true;   // ביקשו לחזור אליו
+  const m = CARD_META[card.id] || {};
+  const since = gameState.roundNumber - st.lastRound;
+  if (m.replayPolicy === 'evergreen') return since >= REPLAY.evergreenCooldown;
+  if (gameState.favoriteCardIds.has(card.id)) return since >= REPLAY.favoriteCooldown;
+  return false;                               // גילוי שכבר התגלה
+}
+/* עדיפות: חדש > נדחה > מה שהכי מזמן לא שוחק */
+function priorityOf(card){
+  const st = statusOf(card.id);
+  if (!st) return 1000 + Math.random();
+  if (st.state === 'deferred') return 800 + Math.random();
+  return (gameState.roundNumber - st.lastRound) * 10 - st.timesPlayed * 2 + Math.random();
+}
+
+/* --- בניית סיבוב ---------------------------------------------------- */
+function buildRound(size, pool){
+  const src = (pool || ALL_CARDS)
+    .filter(isEligible)
+    .filter(c => minPosOf(c) <= size);        // סיבוב קצר מדי — הקלף לא נכנס בכלל
+  const byBucket = { talk:[], play:[], care:[], touch:[] };
+  src.forEach(c => byBucket[bucketOf(c)].push(c));
+  Object.keys(byBucket).forEach(k => byBucket[k].sort((a,b)=> priorityOf(b)-priorityOf(a)));
+
+  const picked = [], used = new Set(), groupCount = {};
+  const maxPerGroup = Math.max(2, Math.round(size / 7));   // אחרת אי אפשר לפזר אותן
+  const grp = c => (CARD_META[c.id]||{}).similarityGroup;
+  const take = (bucket, n) => {
+    const list = byBucket[bucket], skipped = [];
+    while (n > 0 && list.length){
+      const c = list.shift();
+      if (used.has(c.id)) continue;
+      const k = grp(c);
+      if (k && (groupCount[k]||0) >= maxPerGroup){ skipped.push(c); continue; }
+      if (k) groupCount[k] = (groupCount[k]||0) + 1;
+      used.add(c.id); picked.push(c); n--;
+    }
+    byBucket[bucket] = skipped.concat(list);               // מוחזרים לסוף התור
+    return n;
+  };
+
+  // יעדים שסכומם בדיוק size (שיטת השארית הגדולה).
+  // בלי זה החיתוך הסופי מוחק דלי שלם — ולכן 'מחווה' נעלם בסיבוב של 10.
+  const keys = ['talk','play','care','touch'];
+  const raw  = keys.map(k => size * ROUND_MIX[k]);
+  const want = raw.map(Math.floor);
+  let left = size - want.reduce((a,b)=>a+b,0);
+  keys.map((k,i)=>({i,frac:raw[i]-want[i]}))
+      .sort((a,b)=>b.frac-a.frac)
+      .forEach(o=>{ if (left > 0){ want[o.i]++; left--; } });
+  if (size >= 4) keys.forEach((k,i)=>{                      // לפחות אחד מכל סוג
+    if (want[i] === 0){ const m = want.indexOf(Math.max(...want)); want[m]--; want[i] = 1; }
+  });
+  keys.forEach((k,i)=> take(k, want[i]));
+  // השלמה לגודל המבוקש מכל מה שנותר, בלי כפילויות
+  const rest = shuffleArray(src.filter(c => !used.has(c.id)));
+  while (picked.length < size && rest.length){
+    const c = rest.shift();
+    if (!used.has(c.id)){ used.add(c.id); picked.push(c); }
+  }
+  return arrangeRound(picked.slice(0, size));
+}
+
+/* סידור: פתיחה נגישה, גיוון בין סוגים, מרחק בין משימות דומות,
+   והתחממות הדרגתית — בלי קשיחות. */
+function arrangeRound(cards){
+  if (cards.length <= 1) return cards;
+  const remaining = shuffleArray(cards);
+  const out = [];
+
+  // פתיחה: משהו קליל ולא מגע
+  let openIdx = remaining.findIndex(c => ['talk','play'].includes(bucketOf(c)));
+  if (openIdx === -1) openIdx = 0;
+  out.push(remaining.splice(openIdx,1)[0]);
+
+  while (remaining.length){
+    const i = out.length, temp = i / Math.max(1, cards.length - 1);
+    const lastBucket = bucketOf(out[out.length-1]);
+    const recent = out.slice(-REPLAY.minGroupGap)
+      .map(c => (CARD_META[c.id]||{}).similarityGroup).filter(Boolean);
+
+    const placeable = remaining.filter(c => positionOk(c, i + 1));
+    const base = placeable.length ? placeable : remaining;
+
+    let pool = base.filter(c =>
+      bucketOf(c) !== lastBucket &&
+      !recent.includes((CARD_META[c.id]||{}).similarityGroup));
+    if (!pool.length) pool = base.filter(c =>
+      !recent.includes((CARD_META[c.id]||{}).similarityGroup));
+    if (!pool.length){                                      // לפחות לא צמוד לקודם
+      const prev = (CARD_META[out[out.length-1].id]||{}).similarityGroup;
+      pool = base.filter(c => (CARD_META[c.id]||{}).similarityGroup !== prev);
+    }
+    if (!pool.length) pool = base;
+
+    let best = pool[0], bestScore = -Infinity;
+    for (const c of pool){
+      const isTouch = bucketOf(c) === 'touch';
+      const score = (isTouch ? temp : (1 - temp) * 0.6) + Math.random() * 0.35;
+      if (score > bestScore){ bestScore = score; best = c; }
+    }
+    out.push(remaining.splice(remaining.indexOf(best),1)[0]);
+  }
+
+  // מעבר תיקון: אם נותרה צמידות של אותה קבוצה — מחליפים מקום עם קלף תואם
+  const gg = c => (CARD_META[c.id]||{}).similarityGroup;
+  for (let i=1;i<out.length;i++){
+    if (!gg(out[i]) || gg(out[i]) !== gg(out[i-1])) continue;
+    const prevI = gg(out[i-1]), nextI = i+1 < out.length ? gg(out[i+1]) : null;
+    for (let j=0;j<out.length;j++){
+      if (j === 0 || j === i || j === i-1) continue;   // מקום 0 נעול — הפתיחה חייבת להישאר קלילה
+      const gj = gg(out[j]);
+      const prevJ = j > 0 ? gg(out[j-1]) : null;
+      const nextJ = j+1 < out.length ? gg(out[j+1]) : null;
+      const okHere  = gj !== prevI && gj !== nextI;
+      const okThere = gg(out[i]) !== prevJ && gg(out[i]) !== nextJ;
+      if (okHere && okThere){ const t = out[i]; out[i] = out[j]; out[j] = t; break; }
+    }
+  }
+
+  // מעבר תיקון למיקום מינימלי: קלף שנחת מוקדם מדי מוחלף עם קלף מאוחר יותר
+  for (let i = 0; i < out.length; i++){
+    if (positionOk(out[i], i + 1)) continue;
+    const need = minPosOf(out[i]);
+    let moved = false;
+    for (let j = need - 1; j < out.length; j++){
+      if (j === i) continue;
+      if (positionOk(out[j], i + 1)){
+        const t = out[i]; out[i] = out[j]; out[j] = t; moved = true; break;
+      }
+    }
+    if (!moved){ out.push(out.splice(i, 1)[0]); i--; }   // אין החלפה — דוחפים לסוף
+  }
+  return out;
+}
+
+/* --- פתיחת סיבובים -------------------------------------------------- */
+function startRound(size, mode, deckId){
+  gameState.roundNumber += 1;
+  const favMode = (mode === 'favorites');
+  const opts = { favoritesMode: favMode };
+  let pool = ALL_CARDS;
+  if (mode === 'deck' && deckId !== 'all') pool = ALL_CARDS.filter(c => c.deck === deckId);
+  if (favMode) pool = ALL_CARDS.filter(c => gameState.favoriteCardIds.has(c.id));
+
+  let queue = (mode === 'mixed') ? buildRound(size, pool)
+            : arrangeRound(shuffleArray(pool.filter(c => isEligible(c, opts))).slice(0, size));
+
+  if (!queue.length){
+    gameState.roundNumber -= 1;
+    showToast('אין כרגע קלפים זמינים בחפיסה הזו');
+    goHome(); return;
+  }
+
+  gameState.active = {
+    mode, deckId: deckId || 'all',
+    target: Math.min(size, queue.length),
+    completed: 0,
+    queue: queue.map(c => c.id),
+    pos: 0, turnIndex: 0, guessPhase: 'write', guessText: '',
+    altPhase: 0, deferredThisRound: []
+  };
+  persist();
+  renderCard();
+  showScreen('game-screen');
+}
+/* סיבוב פעיל = התחיל ולא הסתיים. סיבוב שהסתיים מאופס ל-null ב-finishSession. */
+function hasActiveRound(){
+  const a = gameState.active;
+  return !!(a && a.completed < a.target && a.pos < a.queue.length);
+}
+/* אין לדרוס סיבוב פעיל בלי פעולה מפורשת */
+function guardStart(fn){
+  if (!hasActiveRound()){ fn(); return; }
+  const a = gameState.active;
+  askChoice('יש לכם סיבוב שעדיין לא הסתיים',
+    `השלמתם ${a.completed} מתוך ${a.target} משימות. מה תרצו לעשות?`, [
+    { label:'המשך הסיבוב הקודם', primary:true, action:resumeActiveRound },
+    { label:'התחל סיבוב חדש', action:fn }
+  ]);
+}
+
+function startMixedEvening(size){ guardStart(()=> startRound(size, 'mixed', 'all')); }
+function deckSize(deckId){
+  return deckId === 'all' ? ALL_CARDS.length : ALL_CARDS.filter(c => c.deck === deckId).length;
+}
+function startDeckPlay(deckId){ guardStart(()=> startRound(deckSize(deckId), 'deck', deckId)); }
+function startFavoritesPlay(){
+  if (!gameState.favoriteCardIds.size){ showToast('סמנו קלף בלב כדי לבנות את החפיסה שלכם'); return; }
+  guardStart(()=> startRound(gameState.favoriteCardIds.size, 'favorites', 'favorites'));
+}
+
+/* סיבוב המשך ממסך הסיכום. משתמש באותו מנוע שליפה ובאותה היסטוריה. */
+function continueUnseenRound(size){
+  const avail = ALL_CARDS.filter(c => isEligible(c)).length;
+  if (avail === 0){
+    askChoice('אין כרגע קלפים זמינים',
+      'השלמתם את כל מה שזמין. אפשר להחזיר קלפים שהסרתם, או לאפס ולהתחיל מחדש.', [
+      { label:'חזרה לתפריט', primary:true, action:goHome }
+    ]);
+    return;
+  }
+  if (avail < size){
+    askChoice(`נותרו ${avail} קלפים זמינים`,
+      `ביקשתם סיבוב של ${size}, אבל המאגר מאפשר כרגע ${avail}. מה תרצו?`, [
+      { label:`שחקו את ${avail} הקלפים`, primary:true, action:()=> guardStart(()=> startRound(avail, 'mixed', 'all')) },
+      { label:'חזרה לתפריט', action:goHome }
+    ]);
+    return;
+  }
+  guardStart(()=> startRound(size, 'mixed', 'all'));
+}
+
+/* מחליף את הקלף הנוכחי באחר, בלי להקטין את מספר המשימות */
+function roundPool(a){
+  if (a.mode === 'favorites') return ALL_CARDS.filter(c => gameState.favoriteCardIds.has(c.id));
+  if (a.mode === 'deck' && a.deckId !== 'all') return ALL_CARDS.filter(c => c.deck === a.deckId);
+  return ALL_CARDS;
+}
+
+/* מחזיר קלף חלופי, או null אם אין.
+   קלף שנדחה בסיבוב הזה לא יוחזר באותו סיבוב — אחרת נוצרת לולאת דילוג. */
+function findReplacement(){
+  const a = gameState.active;
+  const blocked = new Set(a.queue.concat(a.deferredThisRound || []));
+  const opts = { favoritesMode: a.mode === 'favorites' };
+  const cands = roundPool(a).filter(c =>
+    isEligible(c, opts) && !blocked.has(c.id) && positionOk(c, a.pos + 1));
+  if (!cands.length) return null;
+  cands.sort((x,y)=> priorityOf(y)-priorityOf(x));
+  const top = cands.slice(0, Math.min(8, cands.length));
+  return top[Math.floor(Math.random()*top.length)];
+}
+
+/* --- שלוש הפעולות ---------------------------------------------------- */
+function advanceTurn(card){
+  const m = CARD_META[card.id] || {};
+  if (m.interaction !== 'both') gameState.active.turnIndex += 1;   // ב"יחד" אין תור
+}
+
+function completeCard(){
+  const a = gameState.active; if (!a || gameState.isAnimatingCard) return;
+  const card = currentCard(); if (!card) return;
+  gameState.isAnimatingCard = true;
+  stopTimerInterval();
+
+  setStatus(card.id, 'done', true);           // timesPlayed עולה רק כאן
+  a.completed += 1;
+  resetCardState();
+  advanceTurn(card);
+  a.pos += 1;
+  persist();
+
+  flyCard('fly-r', ()=>{
+    if (a.completed >= a.target || a.pos >= a.queue.length) finishSession();
+    else renderCard();
+  });
+}
+
+function deferCard(){
+  const a = gameState.active; if (!a || gameState.isAnimatingCard) return;
+  const card = currentCard(); if (!card) return;
+
+  const repl = findReplacement();
+  if (!repl){
+    // אין קלף חדש להחלפה. אם נותרו קלפים בתור — ״לא עכשיו״ פשוט דוחה אותו לסוף,
+    // וזו בדיוק המשמעות שלו. רק כשבאמת אין לאן — שואלים את המשתתפים.
+    if (a.queue.length - a.pos > 1){
+      gameState.isAnimatingCard = true;
+      stopTimerInterval();
+      setStatus(card.id, 'deferred', false);
+      resetCardState();
+      a.queue.push(a.queue.splice(a.pos, 1)[0]);
+      persist();
+      flyCard('fly-l', ()=> renderCard());
+      return;
+    }
+    noReplacementDialog(card); return;               // לא מקצרים בשקט ולא נתקעים
+  }
+
+  gameState.isAnimatingCard = true;
+  stopTimerInterval();
+  setStatus(card.id, 'deferred', false);             // לא נחשב כהשלמה
+  (a.deferredThisRound = a.deferredThisRound || []).push(card.id);
+  resetCardState();
+  a.queue[a.pos] = repl.id;
+  persist();
+  flyCard('fly-l', ()=> renderCard());
+}
+
+/* כשאין קלף חלופי — המשתתפים בוחרים, המשחק לא מחליט בשבילם */
+function noReplacementDialog(card){
+  const a = gameState.active;
+  const left = a.target - a.completed;
+  askChoice('אין קלף חלופי זמין',
+    `נגמרו הקלפים המתאימים להחלפה בסיבוב הזה. נותרו ${left} משימות.`, [
+    { label:'להשאיר את הקלף הזה', primary:true, action:()=>{} },
+    { label:'לסיים את הסיבוב כאן', action:finishSession },
+    { label:'לבחור חפיסה אחרת', action:goHome }
+  ]);
+}
+
+function retireCard(){
+  const a = gameState.active; if (!a || gameState.isAnimatingCard) return;
+  const card = currentCard(); if (!card) return;
+  gameState.isAnimatingCard = true;
+  stopTimerInterval();
+
+  setStatus(card.id, 'retired', false);
+  resetCardState();
+  gameState.favoriteCardIds.delete(card.id);
+
+  const repl = findReplacement();
+  if (repl){
+    a.queue[a.pos] = repl.id;
+    showToast('הקלף הוסר. אפשר להחזיר אותו מהתפריט הראשי');
+  } else {
+    a.queue.splice(a.pos, 1);                        // אין חלופה — הסיבוב מתקצר
+    a.target = Math.max(a.completed, a.queue.length + a.completed);
+    showToast(`הקלף הוסר. לא נמצאה חלופה — נותרו ${a.target - a.completed} משימות`);
+  }
+  persist();
+
+  flyCard('fly-l', ()=>{
+    if (a.completed >= a.target || a.pos >= a.queue.length) finishSession();
+    else renderCard();
+  });
+}
+
+function flyCard(cls, done){
+  const el = document.getElementById('card');
+  el.classList.remove('deal'); el.classList.add(cls);
+  setTimeout(()=>{ gameState.isAnimatingCard = false; done(); }, 300);
+}
+
+/* --- מועדפים ---------------------------------------------------------- */
+function toggleFavoriteCurrentCard(){
+  const card = currentCard(); if (!card) return;
+  if (gameState.favoriteCardIds.has(card.id)) gameState.favoriteCardIds.delete(card.id);
+  else { gameState.favoriteCardIds.add(card.id); playFavoriteSound(); }
+  updateFavoriteButtonUI(card.id);
+  updateFavoritesBadge();
+  persist();                                   // נשמר מיידית
+}
+function updateFavoriteButtonUI(cardId){
+  const btn = document.getElementById('btn-heart');
+  const fav = gameState.favoriteCardIds.has(cardId);
+  btn.innerHTML = fav ? I.heartFill : I.heart;
+  btn.setAttribute('aria-pressed', fav ? 'true' : 'false');
+  if (fav){ btn.classList.remove('beat'); void btn.offsetWidth; btn.classList.add('beat'); }
+}
+function updateFavoritesBadge(){
+  const el = document.getElementById('fav-count');
+  if (el) el.textContent = gameState.favoriteCardIds.size;
+}
+
+/* --- טיימר: מקור יחיד הוא statedDurationSec --------------------------- */
+let cardTimer = { intervalId:null, initialSeconds:0, remainingSeconds:0, running:false };
+const RING_LEN = 100.53;
+
+function formatSeconds(sec){
+  const m = Math.floor(sec/60), s = sec % 60;
+  return m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `0:${String(s).padStart(2,'0')}`;
+}
+function paintRing(){
+  const frac = cardTimer.initialSeconds > 0 ? cardTimer.remainingSeconds / cardTimer.initialSeconds : 0;
+  document.getElementById('timer-arc').setAttribute('stroke-dashoffset', String(RING_LEN * (1 - frac)));
+  document.getElementById('timer-text').textContent = formatSeconds(cardTimer.remainingSeconds);
+}
+function stopTimerInterval(){
+  if (cardTimer.intervalId){ clearInterval(cardTimer.intervalId); cardTimer.intervalId = null; }
+  cardTimer.running = false;
+  const b = document.getElementById('timer-btn');
+  if (b && cardTimer.initialSeconds && cardTimer.remainingSeconds > 0 && b.textContent === 'השהיה') b.textContent = 'המשך';
+}
+function setupCardTimer(seconds){
+  stopTimerInterval();
+  const box = document.getElementById('timer');
+  if (!seconds || seconds <= 0){ box.hidden = true; cardTimer.initialSeconds = 0; return; }
+  cardTimer.initialSeconds = seconds; cardTimer.remainingSeconds = seconds;
+  box.hidden = false;
+  document.getElementById('timer-btn').textContent = 'הפעלת הטיימר';
+  paintRing();
+}
+function toggleCardTimer(){
+  if (cardTimer.running){ stopTimerInterval(); document.getElementById('timer-btn').textContent = 'המשך'; return; }
+  if (cardTimer.remainingSeconds <= 0) cardTimer.remainingSeconds = cardTimer.initialSeconds;
+  cardTimer.running = true;
+  document.getElementById('timer-btn').textContent = 'השהיה';
+  paintRing();
+  cardTimer.intervalId = setInterval(()=>{
+    cardTimer.remainingSeconds -= 1;
+    paintRing();
+    if (cardTimer.remainingSeconds <= 0){
+      stopTimerInterval();
+      document.getElementById('timer-btn').textContent = 'הפעלה שוב';
+      playTimerBell();                        // רק מצלצל; לא מעביר קלף
+    }
+  }, 1000);
+}
+function resetCardTimer(){ setupCardTimer(cardTimer.initialSeconds); }
+
+/* --- שמירה ושחזור ------------------------------------------------------ */
+function persist(){
+  return Store.set(JSON.stringify({
+    v: SAVE_VERSION,
+    partner1: gameState.partner1, partner2: gameState.partner2,
+    favoriteCardIds: Array.from(gameState.favoriteCardIds),
+    cardStatus: gameState.cardStatus,
+    roundNumber: gameState.roundNumber,
+    active: gameState.active
+  }));
+}
+function loadSaved(){
+  try{
+    const raw = Store.get(); if (!raw) return null;
+    const p = JSON.parse(raw); if (!p) return null;
+    if (p.v !== SAVE_VERSION){               // שמירה ישנה — נשמרים רק שמות ומועדפים
+      return { partner1:p.partner1||'', partner2:p.partner2||'',
+               favoriteCardIds:Array.isArray(p.favoriteCardIds)?p.favoriteCardIds:[],
+               cardStatus:{}, roundNumber:0, active:null };
+    }
+    return p;
+  }catch(e){ console.warn('Could not read saved state:', e); return null; }
+}
+function applySaved(p){
+  gameState.partner1 = p.partner1 || '';
+  gameState.partner2 = p.partner2 || '';
+  gameState.favoriteCardIds = new Set(p.favoriteCardIds || []);
+  gameState.cardStatus = p.cardStatus || {};
+  gameState.roundNumber = p.roundNumber || 0;
+  gameState.active = p.active || null;
+}
+function resumeActiveRound(){
+  if (!gameState.active){ goHome(); return; }
+  renderCard();
+  showScreen('game-screen');
+}
+/* שמירה ידנית — אותו מנגנון בדיוק כמו האוטומטית, בלי מקור אמת שני */
+function saveCoupleMemory(){
+  const btn = document.getElementById('btn-remember');
+  if (persist()){
+    if (btn) btn.textContent = 'נשמר · נמשיך בפעם הבאה';
+    showToast('ההתקדמות נשמרה');
+  } else {
+    if (btn) btn.textContent = 'השמירה נכשלה — נסו שוב';
+    showToast('הדפדפן חוסם שמירה מקומית — ההתקדמות לא נשמרה');
+  }
+}
+
+let resetArmed = false;
+function resetSavedMemory(){
+  const btn = document.getElementById('btn-reset');
+  if (!resetArmed){
+    resetArmed = true;
+    btn.textContent = 'בטוחים? לחצו שוב';
+    setTimeout(()=>{ if (resetArmed){ resetArmed = false; btn.textContent = 'איפוס'; } }, 4000);
+    return;
+  }
+  resetArmed = false;
+  Store.clear();
+  gameState.favoriteCardIds = new Set();
+  gameState.cardStatus = {};
+  gameState.roundNumber = 0;
+  gameState.active = null;
+  btn.textContent = 'איפוס';
+  showToast('הכול אופס — מועדפים, סטטוסים והתקדמות');
+  goHome();
+}
+function restoreRetired(){
+  let n = 0;
+  Object.keys(gameState.cardStatus).forEach(id=>{
+    if (gameState.cardStatus[id].state === 'retired'){ delete gameState.cardStatus[id]; n++; }
+  });
+  persist(); goHome();
+  showToast(n === 1 ? 'הקלף חזר לחפיסה' : n + ' קלפים חזרו לחפיסה');
+}
+
+/* --- מסך הבית ---------------------------------------------------------- */
+function countByState(st){
+  return Object.values(gameState.cardStatus).filter(x => x.state === st).length;
+}
+function goHome(){
+  const named = gameState.partner1 && gameState.partner2;
+  document.getElementById('greet-line').textContent = named
+    ? `ערב טוב, ${gameState.partner1} ו${gameState.partner2}` : 'בחרו את האווירה לערב';
+
+  const a = gameState.active;
+  const resume = document.getElementById('resume-banner');
+  if (a && a.completed < a.target && a.pos < a.queue.length){
+    document.getElementById('resume-text').textContent =
+      `השלמתם ${a.completed} מתוך ${a.target} משימות בסיבוב ${gameState.roundNumber}.`;
+    resume.hidden = false;
+  } else resume.hidden = true;
+
+  const done = countByState('done'), memLine = document.getElementById('memory-line');
+  if (done > 0){
+    const avail = ALL_CARDS.filter(c => isEligible(c)).length;
+    document.getElementById('memory-text').textContent =
+      `השלמתם ${done} קלפים · ${avail} זמינים לסיבוב הבא.`;
+    memLine.hidden = false;
+  } else memLine.hidden = true;
+
+  const ret = countByState('retired'), retLine = document.getElementById('retired-line');
+  if (ret > 0){
+    document.getElementById('retired-text').textContent =
+      ret === 1 ? 'קלף אחד הוסר מהשליפה.' : `${ret} קלפים הוסרו מהשליפה.`;
+    retLine.hidden = false;
+  } else retLine.hidden = true;
+
+  updateFavoritesBadge();
+  showScreen('welcome-screen');
+}
+function askChoice(title, body, options){
+  document.getElementById('choice-title').textContent = title;
+  document.getElementById('choice-body').textContent = body;
+  const host = document.getElementById('choice-actions');
+  host.innerHTML = '';
+  options.forEach(o=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn ' + (o.primary ? 'btn-gold' : 'btn-ghost');
+    b.textContent = o.label;
+    b.addEventListener('click', ()=>{ closeChoice(); if (o.action) o.action(); });
+    host.appendChild(b);
+  });
+  document.getElementById('choice-modal').classList.add('open');
+}
+function closeChoice(){ document.getElementById('choice-modal').classList.remove('open'); }
+
+function toggleRulesModal(show){ document.getElementById('rules-modal').classList.toggle('open', !!show); }
+function renderDeckSpines(){
+  const host = document.getElementById('deck-spines');
+  host.innerHTML = ['guess','memories','humor','gesture','closeness','massage'].map(k=>{
+    const d = DECKS[k];
+    return `<button class="spine${d.accent?' accent':''}" onclick="startDeckPlay('${k}')">
+      <span class="glyph" aria-hidden="true">${d.icon}</span><b>${d.short}</b><span>${d.count}</span></button>`;
+  }).join('');
+}
+
+/* --- רינדור הקלף --------------------------------------------------------- */
+function renderProgress(){
+  const a = gameState.active;
+  document.getElementById('prog-now').textContent = Math.min(a.completed + 1, a.target);
+  document.getElementById('prog-total').textContent = a.target;
+
+  const pips = document.getElementById('pips'), bar = document.getElementById('hairbar');
+  if (a.target <= 24){
+    bar.hidden = true; pips.hidden = false;
+    let html = '';
+    for (let i=0;i<a.target;i++){
+      const cls = i < a.completed ? 'done' : (i === a.completed ? 'now' : '');
+      html += `<span class="pip ${cls}"></span>`;
+    }
+    pips.innerHTML = html;
+  } else {
+    pips.hidden = true; pips.innerHTML = ''; bar.hidden = false;
+    document.getElementById('hairbar-fill').style.width = (a.completed / a.target * 100) + '%';
+  }
+  const left = a.target - a.completed;
+  document.getElementById('pile-1').hidden = left < 3;
+  document.getElementById('pile-2').hidden = left < 2;
+  document.getElementById('pile-3').hidden = left < 1;
+}
+
+/* touch-action נקבע לפי המצב: אם הקלף לא דורש גלילה, אין סיבה
+   לתת לדפדפן רשות לפנות אנכית — וזה מה שמשחרר את ההחלקה. */
+function syncTouchAction(){
+  const t = document.querySelector('.table'), el = document.getElementById('card');
+  if (!t || !el) return;
+  const scrolls = t.scrollHeight > t.clientHeight + 1;
+  el.style.touchAction = scrolls ? 'pan-y' : 'none';
+}
+
+function renderCard(){
+  const a = gameState.active;
+  if (!a || a.pos >= a.queue.length){ finishSession(); return; }
+  const card = currentCard();
+  if (!card){ finishSession(); return; }
+  const deck = DECKS[card.deck], meta = CARD_META[card.id] || {};
+
+  renderProgress();
+  document.getElementById('card-deck-icon').innerHTML = ICON_SM(deck.icon);
+  document.getElementById('card-deck-name').textContent = deck.name;
+  document.getElementById('card-no').textContent = `${card.id} / 250`;
+
+  const txt = document.getElementById('card-text');
+  txt.textContent = card.text;
+  // תיבת הניחוש מוסיפה כ-120px — סף הכיווץ יורד כדי שלא תיווצר גלילה
+  const smAt = (meta.interaction === 'guess_reveal') ? 85 : 118;
+  txt.className = 'card-text' + (card.text.length > smAt ? ' sm' : '');
+
+  // תור לפי interaction
+  const turnEl = document.getElementById('turn-line');
+  const primary = document.getElementById('btn-primary');
+  const badgeR  = document.getElementById('badge-right');
+  primary.textContent = 'השלמנו';
+  badgeR.textContent  = 'השלמנו';
+
+  if (meta.interaction === 'both'){
+    turnEl.innerHTML = `<span style="opacity:.85">${esc(deck.roleText)} · יחד</span>`;
+  } else if (meta.interaction === 'alternating'){
+    const second = (a.altPhase || 0) === 1;
+    turnEl.innerHTML = second
+      ? `עכשיו <b>${esc(otherName())}</b> · שלב 2 מתוך 2`
+      : `מתחילים: <b>${esc(turnName())}</b> · שלב 1 מתוך 2`;
+    if (!second){
+      primary.textContent = `עכשיו התור של ${otherName()}`;
+      badgeR.textContent  = `התור של ${otherName()}`;
+    }
+  } else {
+    turnEl.innerHTML = `התור של <b>${esc(turnName())}</b>`;
+  }
+
+  updateFavoriteButtonUI(card.id);
+
+  renderGuess(meta);
+
+  // תרשים
+  const dgBox = document.getElementById('diagram');
+  if (card.deck === 'massage'){
+    const d = getMassageDiagram(card);
+    document.getElementById('diagram-svg').innerHTML = d.svg;
+    document.getElementById('diagram-cap').textContent = d.cap;
+    dgBox.hidden = false;
+  } else dgBox.hidden = true;
+
+  setupCardTimer(meta.statedDurationSec || 0);   // מקור יחיד — בלי ניתוח טקסט
+
+  const el = document.getElementById('card');
+  el.style.transform = ''; el.style.opacity = ''; el.style.transition = '';
+  el.classList.remove('fly-r','fly-l','deal');
+  void el.offsetWidth; el.classList.add('deal');
+  requestAnimationFrame(syncTouchAction);
+  playCardDealSound();
+}
+
+/* בקלף ניחוש: בעל התור הוא הנושא, והשני הוא המנחש */
+function otherName(){
+  const a = gameState.active, i = a ? a.turnIndex : 0;
+  return (i % 2 === 0) ? (gameState.partner2 || 'בן/בת זוג ב׳') : (gameState.partner1 || 'בן/בת זוג א׳');
+}
+
+function renderGuess(meta){
+  const box = document.getElementById('guess-box');
+  if (!meta || meta.interaction !== 'guess_reveal'){ box.hidden = true; return; }
+  const a = gameState.active;
+  const hint = document.getElementById('guess-hint');
+  const inp  = document.getElementById('guess-input');
+  const shown= document.getElementById('guess-shown');
+  const btn  = document.getElementById('guess-btn');
+  box.hidden = false; btn.hidden = false;
+
+  const phase = a.guessPhase || 'write';
+  if (phase === 'write'){
+    hint.textContent = `העבירו את המכשיר ל${otherName()} — כתבו את הניחוש בלי להראות.`;
+    inp.hidden = false; inp.value = a.guessText || '';
+    shown.hidden = true;
+    btn.textContent = 'הסתרת הניחוש';
+  } else if (phase === 'hidden'){
+    hint.textContent = `הניחוש מוסתר. החזירו את המכשיר ל${turnName()} — וכשאתם מוכנים, גלו.`;
+    inp.hidden = true; shown.hidden = true;
+    btn.textContent = 'לגלות את הניחוש';
+  } else {
+    hint.textContent = `הניחוש של ${otherName()} — עכשיו ספרו את התשובה האמיתית.`;
+    inp.hidden = true;
+    shown.hidden = false;
+    shown.textContent = (a.guessText && a.guessText.length) ? a.guessText : 'לא נכתב ניחוש';
+    btn.hidden = true;
+  }
+}
+
+function guessAction(){
+  const a = gameState.active; if (!a) return;
+  const phase = a.guessPhase || 'write';
+  if (phase === 'write'){
+    a.guessText = document.getElementById('guess-input').value.trim();
+    a.guessPhase = 'hidden';
+  } else if (phase === 'hidden'){
+    a.guessPhase = 'revealed';
+  }
+  persist();
+  const c = currentCard();
+  if (c) renderGuess(CARD_META[c.id]);
+}
+
+function resetCardState(){
+  const a = gameState.active; if (!a) return;
+  a.guessPhase = 'write'; a.guessText = ''; a.altPhase = 0;
+}
+
+/* הכפתור הראשי: בקלף alternating הוא קודם מעביר לשלב השני, ורק אז משלים */
+function primaryAction(){
+  const a = gameState.active; if (!a || gameState.isAnimatingCard) return;
+  const c = currentCard(); if (!c) return;
+  const m = CARD_META[c.id] || {};
+  if (m.interaction === 'alternating' && (a.altPhase || 0) === 0){
+    a.altPhase = 1;
+    persist();
+    renderCard();
+    return;
+  }
+  completeCard();
+}
+
+/* --- החלקה --------------------------------------------------------------- */
+/* --- החלקה ---------------------------------------------------------------
+   Pointer Events עם הכרעת כיוון לפני התחייבות.
+   הקלף יושב בתוך אזור שניתן לגלילה אנכית, ולכן אסור לתפוס את המחווה
+   לפני שברור שהיא אופקית — אחרת הדפדפן משתלט, יורה cancel, והקלף קופץ חזרה.
+   זה מה ששבר את ההחלקה בטאבלט.
+   ------------------------------------------------------------------------ */
+function initCardSwipePhysics(){
+  const el = document.getElementById('card');
+  const bR = document.getElementById('badge-right'), bL = document.getElementById('badge-left');
+  let sx = 0, sy = 0, dx = 0, tracking = false, committed = false, pid = null;
+  const SLOP = 8;                                    // כמה פיקסלים עד שמכריעים כיוון
+
+  function paint(){
+    el.style.transform = `translateX(${dx}px) rotate(${dx * 0.055}deg)`;
+    bR.style.opacity = dx >  45 ? Math.min(1, ( dx - 45) / 70) : 0;
+    bL.style.opacity = dx < -45 ? Math.min(1, (-dx - 45) / 70) : 0;
+  }
+  function release(){
+    tracking = false; committed = false;
+    if (pid !== null){ try { el.releasePointerCapture(pid); } catch(e){} pid = null; }
+  }
+  function snapBack(){
+    release();
+    bR.style.opacity = 0; bL.style.opacity = 0;
+    el.style.transition = 'transform .3s cubic-bezier(.22,1,.36,1)';
+    el.style.transform = 'translateX(0) rotate(0deg)';
+  }
+  function threshold(){
+    const w = el.getBoundingClientRect().width || 258;
+    return Math.max(64, Math.min(110, w * 0.34));     // יחסי לרוחב הקלף
+  }
+
+  function down(x, y, target, id, elForCapture){
+    if (gameState.isAnimatingCard) return;
+    if (target && target.closest && target.closest('button, textarea, input')) return;
+    tracking = true; committed = false;
+    sx = x; sy = y; dx = 0; pid = (id === undefined ? null : id);
+    el.style.transition = 'none';
+  }
+  function move(x, y){
+    if (!tracking) return;
+    const mx = x - sx, my = y - sy;
+    if (!committed){
+      if (Math.abs(mx) < SLOP && Math.abs(my) < SLOP) return;   // עוד לא ברור
+      if (Math.abs(my) > Math.abs(mx)){ tracking = false; return; }  // אנכי — משחררים לדפדפן
+      committed = true;
+      if (pid !== null){ try { el.setPointerCapture(pid); } catch(e){} }  // מכאן המחווה שלנו
+    }
+    dx = mx;
+    paint();
+  }
+  function up(){
+    if (!tracking){ release(); return; }
+    if (!committed){ snapBack(); return; }
+    const t = threshold();
+    const go = dx > t ? 'right' : (dx < -t ? 'left' : null);
+    release();
+    bR.style.opacity = 0; bL.style.opacity = 0;
+    if (go === 'right'){ el.style.transition = ''; primaryAction(); }
+    else if (go === 'left'){ el.style.transition = ''; deferCard(); }
+    else snapBack();
+  }
+
+  if (window.PointerEvent){
+    el.addEventListener('pointerdown', e=>{
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      down(e.clientX, e.clientY, e.target, e.pointerId);
+    });
+    el.addEventListener('pointermove', e=>{
+      if (pid !== null && e.pointerId !== pid) return;
+      move(e.clientX, e.clientY);
+    });
+    el.addEventListener('pointerup', e=>{ if (pid === null || e.pointerId === pid) up(); });
+    // אם הדפדפן מנסה לחטוף את המחווה אחרי שכבר התחייבנו אופקית —
+    // מסיימים אותה כרגיל במקום לבטל. זה מה שמונע "הקלף קופץ חזרה".
+    el.addEventListener('pointercancel', ()=>{ if (committed) up(); else snapBack(); });
+  } else {
+    // מסלול גיבוי לדפדפנים ישנים ללא Pointer Events
+    el.addEventListener('touchstart', e=> down(e.touches[0].clientX, e.touches[0].clientY, e.target), {passive:true});
+    el.addEventListener('touchmove',  e=> { if (tracking) move(e.touches[0].clientX, e.touches[0].clientY); }, {passive:true});
+    el.addEventListener('touchend', up);
+    el.addEventListener('touchcancel', snapBack);
+    el.addEventListener('mousedown', e=> down(e.clientX, e.clientY, e.target));
+    window.addEventListener('mousemove', e=> move(e.clientX, e.clientY));
+    window.addEventListener('mouseup', up);
+  }
+  window.addEventListener('blur', snapBack);
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){ toggleRulesModal(false); closeChoice(); return; }
+    if (!document.getElementById('game-screen').classList.contains('active')) return;
+    if (document.getElementById('rules-modal').classList.contains('open')) return;
+    if (document.getElementById('choice-modal').classList.contains('open')) return;
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.key === 'ArrowRight'){ e.preventDefault(); primaryAction(); }
+    if (e.key === 'ArrowLeft'){ e.preventDefault(); deferCard(); }
+  });
+}
+
+/* --- סיכום ---------------------------------------------------------------- */
+function finishSession(){
+  stopTimerInterval();
+  const a = gameState.active;
+  const named = gameState.partner1 && gameState.partner2;
+  const d = new Date().toLocaleDateString('he-IL',{day:'numeric',month:'long'});
+  document.getElementById('album-date').textContent = named
+    ? `${gameState.partner1} ו${gameState.partner2} · ${d}` : d;
+
+  const favIds = Array.from(gameState.favoriteCardIds);
+  const host = document.getElementById('keepsakes');
+  host.innerHTML = favIds.length
+    ? favIds.slice().reverse().map(id=>{
+        const c = cardById(id); if (!c) return '';
+        return `<div class="keep"><span class="mark" aria-hidden="true">${I.heartFill}</span>
+          <span class="tx"><span>${esc(DECKS[c.deck].name)} · ${c.id}</span><p>${esc(c.text)}</p></span></div>`;
+      }).join('')
+    : `<div class="empty">לא סימנתם הערב קלף בלב.<br>בפעם הבאה לחצו על הלב שבתחתית הקלף — והוא ייכנס לאלבום.</div>`;
+
+  const done = countByState('done'), fresh = ALL_CARDS.filter(isEligible).length;
+  document.getElementById('tally').innerHTML =
+    `השלמתם <b>${a ? a.completed : 0}</b> משימות הערב · <b>${done}</b> קלפים בסך הכול · <b>${fresh}</b> זמינים לפעם הבאה`;
+
+  document.getElementById('btn-more-10').hidden = false;
+  gameState.active = null;
+  persist();
+  showScreen('summary-screen');
+}
+
+function copySummary(){
+  const names = (gameState.partner1 && gameState.partner2)
+    ? `של ${gameState.partner1} ו${gameState.partner2}` : 'שלנו';
+  const favIds = Array.from(gameState.favoriteCardIds);
+  let favLine = '';
+  if (favIds.length){
+    const last = cardById(favIds[favIds.length-1]);
+    if (last) favLine = `\n❤ הקלף שלקחנו איתנו: "${last.text}"`;
+  }
+  const text = `על אותו גל — הערב ${names}:\nהשלמנו ${countByState('done')} קלפים, ${favIds.length} מהם נכנסו לאלבום.${favLine}`;
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text)
+      .then(()=> showToast('הסיכום הועתק'))
+      .catch(()=> showToast('הדפדפן חסם את ההעתקה — אפשר לסמן ולהעתיק ידנית'));
+  } else showToast('הדפדפן לא תומך בהעתקה אוטומטית');
+}
+
+/* --- אתחול ----------------------------------------------------------------- */
+/* מזהה את סוג המכשיר ומתאים ניסוח ורמזים. קובץ אחד, התנהגות נכונה בכל מקום. */
+/* מסך מלא — בטאבלט ובנייד זה מה שמעלים את סרגלי הדפדפן ונותן חלון אמיתי */
+function fullscreenSupported(){
+  const e = document.documentElement;
+  return !!(e.requestFullscreen || e.webkitRequestFullscreen);
+}
+function isFullscreen(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function toggleFullscreen(){
+  const e = document.documentElement;
+  try{
+    if (isFullscreen()){
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      (e.requestFullscreen || e.webkitRequestFullscreen).call(e);
+    }
+  }catch(err){ showToast('הדפדפן לא מאפשר מסך מלא כאן'); }
+}
+function paintFullscreenBtn(){
+  const b = document.getElementById('btn-fullscreen');
+  if (!b) return;
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  b.hidden = !(coarse && fullscreenSupported()) || isStandalone();
+  b.innerHTML = isFullscreen() ? I.shrink : I.expand;
+  b.setAttribute('aria-pressed', isFullscreen() ? 'true' : 'false');
+  b.title = isFullscreen() ? 'יציאה ממסך מלא' : 'מסך מלא';
+}
+
+/* נרשם רק כשהמשחק מוגש משרת (לא file:// ולא iframe של Sites) */
+function registerServiceWorker(){
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+  navigator.serviceWorker.register('sw.js').catch(()=>{});   // אין קובץ? לא נורא
+}
+function isStandalone(){
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+      || window.navigator.standalone === true;
+}
+
+function detectDevice(){
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const wide   = window.matchMedia && window.matchMedia('(min-width:700px) and (min-height:720px)').matches;
+  const kind   = coarse ? (wide ? 'tablet' : 'phone') : 'desktop';
+  document.body.classList.remove('dev-phone','dev-tablet','dev-desktop');
+  document.body.classList.add('dev-' + kind);
+  document.body.classList.toggle('is-touch', !!coarse);
+  document.body.classList.toggle('is-app', isStandalone());
+  paintFullscreenBtn();
+  const sub = document.getElementById('greet-sub');
+  if (sub) sub.textContent = coarse
+    ? 'החליקו את הקלף ימינה כשסיימתם, או שמאלה כדי לדחות אותו.'
+    : 'גררו את הקלף ימינה או שמאלה — או השתמשו בחצים ← →.';
+  return kind;
+}
+
+function paintStaticIcons(){
+  document.getElementById('btn-music').innerHTML = I.music;
+  document.getElementById('btn-next-track').innerHTML = I.next;
+  document.getElementById('btn-sound').innerHTML = I.sound;
+  document.getElementById('btn-rules').innerHTML = I.info;
+  document.getElementById('btn-fullscreen').innerHTML = I.expand;
+  document.getElementById('icon-x').innerHTML = I.x;
+  document.getElementById('icon-reset').innerHTML = I.reset;
+  document.getElementById('chev-primary').innerHTML = I.chev;
+  document.getElementById('album-icon').innerHTML = I.album;
+  document.getElementById('btn-heart').innerHTML = I.heart;
+  document.getElementById('mark-sm').innerHTML = I.markSm;
+  document.getElementById('boxart').innerHTML = I.markLg;
+  document.getElementById('wordmark-wave').innerHTML = I.wordmarkWave;
+  try{
+    const ico = document.createElement('link');
+    ico.rel = 'icon'; ico.type = 'image/svg+xml';
+    ico.href = 'data:image/svg+xml,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="10" fill="#2D0914"/>'+
+      '<path d="M53 22 C48 22 46 27 43 30 C39 33.5 36 30.5 32 29 C28 27.5 25 30.8 22 31.4 C18 32 14 32 11 32" fill="none" stroke="#E6D09B" stroke-width="5" stroke-linecap="round"/>'+
+      '<path d="M53 42 C48 42 46 37 43 34 C39 30.5 36 33.5 32 35 C28 36.5 25 33.2 22 32.6 C18 32 14 32 11 32" fill="none" stroke="#C6A45B" stroke-width="5" stroke-linecap="round"/></svg>');
+    document.head.appendChild(ico);
+  }catch(e){}
+}
+
+function toggleSoundEffects(){
+  gameState.soundEnabled = !gameState.soundEnabled;
+  const b = document.getElementById('btn-sound');
+  b.innerHTML = gameState.soundEnabled ? I.sound : I.mute;
+  b.setAttribute('aria-pressed', gameState.soundEnabled ? 'true' : 'false');
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  validateCardMetadata();
+  detectDevice();
+  registerServiceWorker();
+  window.addEventListener('resize', detectDevice);
+  document.addEventListener('fullscreenchange', paintFullscreenBtn);
+  document.addEventListener('webkitfullscreenchange', paintFullscreenBtn);
+  paintStaticIcons();
+  renderDeckSpines();
+  initCardSwipePhysics();
+  initFilePlayer();
+  updateMusicButtonUI();
+
+  // ?reset=1 — מיידי רק בסביבת פיתוח; באתר חי דורש אישור מפורש
+  if (new URLSearchParams(location.search).has('reset')){
+    const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:';
+    if (local) Store.clear();
+    else setTimeout(()=> askChoice('לאפס את המשחק?',
+      'הכתובת מכילה ?reset=1. הפעולה תמחק את השמות, המועדפים, הסטטוסים וההתקדמות.', [
+      { label:'כן, אפסו הכול', primary:true, action:()=>{ Store.clear(); location.href = location.pathname; } },
+      { label:'לא, השאירו כמו שזה', action:()=>{} }
+    ]), 0);
+  }
+
+  const saved = loadSaved();
+  if (saved){
+    applySaved(saved);
+    document.getElementById('input-partner-1').value = gameState.partner1;
+    document.getElementById('input-partner-2').value = gameState.partner2;
+  }
+  updateFavoritesBadge();
+
+  document.getElementById('input-partner-2').addEventListener('keydown', e=>{
+    if (e.key === 'Enter') submitCoupleNames();
+  });
+  document.getElementById('rules-modal').addEventListener('click', e=>{
+    if (e.target.id === 'rules-modal') toggleRulesModal(false);
+  });
+
+  if (gameState.partner1 && gameState.partner2) goHome();
+  else showScreen('names-screen');
+});
+</script>
+</body>
+</html>
