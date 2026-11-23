@@ -1,29 +1,74 @@
-/* Service worker — מאפשר התקנה כאפליקציה ועבודה גם בלי רשת.
-   המשחק כולו בקובץ אחד, ולכן המטמון קטן. המוזיקה לא נשמרת
-   במטמון בכוונה: 15MB זה יותר מדי לאחסון אוטומטי. */
-const CACHE = 'al-oto-gal-v1';
+/* Service Worker — מאפשר התקנה כאפליקציה ועבודה גם בלי רשת.
+   -------------------------------------------------------------------
+   חשוב: ה-HTML נטען ברשת-תחילה (network-first). הגרסה הקודמת הגישה
+   מטמון-תחילה עם שם מטמון קבוע, ולכן נתקעה לנצח על הגרסה הראשונה
+   שנשמרה — והמשחק "עבד רק באינקוגניטו". אל תחזירו את ההתנהגות הזו.
+
+   בכל פרסום של גרסה חדשה — להעלות את המספר ב-CACHE.
+*/
+const CACHE = 'al-oto-gal-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest',
                './icon-192.png', './icon-512.png', './icon-maskable.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(SHELL))
+      .catch(()=>{})          // קובץ חסר לא ימנע התקנה
+      .then(() => self.skipWaiting())
+  );
 });
+
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-    .then(() => self.clients.claim()));
+  e.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
 });
+
+self.addEventListener('message', e => {
+  if (e.data === 'skip-waiting') self.skipWaiting();
+});
+
 self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
-  if (e.request.method !== 'GET') return;
-  if (/\.mp3$/i.test(url.pathname)) return;          // מוזיקה — תמיד מהרשת
+  const req = e.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+  if (/\.mp3$/i.test(url.pathname)) return;            // מוזיקה — תמיד מהרשת
+
+  const isPage = req.mode === 'navigate' ||
+                 /\.(html|webmanifest)$/i.test(url.pathname) ||
+                 url.pathname.endsWith('/');
+
+  if (isPage){
+    // רשת תחילה: תמיד מקבלים את הגרסה העדכנית כשיש חיבור
+    e.respondWith(
+      fetch(req)
+        .then(res => {
+          if (res && res.ok && url.origin === location.origin){
+            const copy = res.clone();
+            caches.open(CACHE).then(c => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // נכסים סטטיים: מטמון תחילה, ורענון ברקע לפעם הבאה
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      if (res.ok && url.origin === location.origin){
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
-      }
-      return res;
-    }).catch(() => caches.match('./index.html')))
+    caches.match(req).then(hit => {
+      const net = fetch(req).then(res => {
+        if (res && res.ok && url.origin === location.origin){
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(req, copy));
+        }
+        return res;
+      }).catch(() => hit);
+      return hit || net;
+    })
   );
 });
