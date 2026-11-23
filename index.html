@@ -213,6 +213,14 @@ h1,h2,h3{font-family:var(--serif);font-weight:700;margin:0;line-height:1.2;text-
 .minor{display:flex;align-items:center;justify-content:center;gap:6px}
 .choice-actions{display:flex;flex-direction:column;gap:9px}
 /* שורת מידע שקטה — לא תיבה, כדי לא לדחוק את הפעולה הראשית */
+.install-strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  border:1px solid rgba(230,208,155,.4);border-radius:6px;padding:12px 14px;
+  background:linear-gradient(160deg,rgba(87,35,55,.5),rgba(36,11,21,.5))}
+.install-ico{color:var(--gold);flex:none;display:grid;place-items:center}
+.install-tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:120px}
+.install-tx b{font-size:13.5px;font-weight:700}
+.install-tx span{font-size:11.5px;color:var(--muted);line-height:1.5}
+.install-strip .btn{min-height:40px;padding:9px 16px;font-size:13px;flex:none}
 .statline{margin:-4px 0 0;font-size:12px;color:var(--muted);line-height:1.6;
   display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
 .btn-link{position:relative;background:none;border:0;padding:4px 0;min-height:24px;font-family:var(--sans);font-size:12px;
@@ -432,6 +440,16 @@ h1,h2,h3{font-family:var(--serif);font-weight:700;margin:0;line-height:1.2;text-
             <button class="btn btn-gold" onclick="resumeActiveRound()">המשיכו מאיפה שעצרתם</button>
           </div>
 
+          <div class="install-strip" id="install-strip" hidden>
+            <span class="install-ico" id="install-ico" aria-hidden="true"></span>
+            <div class="install-tx">
+              <b>אפשר להתקין את המשחק</b>
+              <span id="install-sub">פתיחה במסך מלא, בלי סרגלי דפדפן</span>
+            </div>
+            <button class="btn btn-ghost" id="install-btn" onclick="doInstall()">התקנה</button>
+            <button class="btn-link" onclick="dismissInstall()">לא עכשיו</button>
+          </div>
+
           <button class="primary-card" onclick="startMixedEvening(20)">
             <span class="t"><b>מתחילים את הערב</b><span>20 קלפים · כ-40 דקות</span></span>
             <span id="chev-primary" aria-hidden="true"></span>
@@ -604,6 +622,7 @@ const I = {
   mute:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6.5 9H3v6h3.5L11 19z"/><path d="M16 10l4 4M20 10l-4 4"/></svg>',
   info:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 17v-5M12 8h.01"/></svg>',
   x:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  install:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>',
   chev:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C6A45B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5l-7 7 7 7"/></svg>',
   /* ---- לוגו: שני גלים בהיסט פאזה שמתכנסים לקו אחד.
      המיזוג בצד שמאל — בעברית קוראים ימין לשמאל, ולכן הלוגו נקרא
@@ -2254,6 +2273,7 @@ function goHome(){
   } else retLine.hidden = true;
 
   updateFavoritesBadge();
+  paintInstallStrip();
   showScreen('welcome-screen');
 }
 function askChoice(title, body, options){
@@ -2418,6 +2438,13 @@ function renderCard(){
   el.style.transform = ''; el.style.opacity = ''; el.style.transition = '';
   el.classList.remove('fly-r','fly-l','deal');
   void el.offsetWidth; el.classList.add('deal');
+  // חובה: אנימציית CSS עם fill:both גוברת על style.transform.
+  // בלי ההסרה הזו הקלף לא זז בכלל בזמן החלקה.
+  el.addEventListener('animationend', function onEnd(ev){
+    if (ev.animationName !== 'dealIn') return;
+    el.removeEventListener('animationend', onEnd);
+    el.classList.remove('deal');
+  });
   fitCard();
   (window.requestAnimationFrame || setTimeout)(()=>{ fitCard(); syncTouchAction(); }, 0);
   playCardDealSound();
@@ -2529,6 +2556,7 @@ function initCardSwipePhysics(){
     if (target && target.closest && target.closest('button, textarea, input')) return;
     tracking = true; committed = false;
     sx = x; sy = y; dx = 0; pid = (id === undefined ? null : id);
+    el.classList.remove('deal');      // משחררים את שליטת האנימציה על ה-transform
     el.style.transition = 'none';
   }
   function move(x, y){
@@ -2639,6 +2667,64 @@ function copySummary(){
 
 /* --- אתחול ----------------------------------------------------------------- */
 /* מזהה את סוג המכשיר ומתאים ניסוח ורמזים. קובץ אחד, התנהגות נכונה בכל מקום. */
+/* ---- התקנה כאפליקציה ----
+   כרום שומר את אירוע ההתקנה ואנחנו מציגים כפתור משלנו.
+   ב-Safari אין אירוע כזה, ולכן מוצגות שם הוראות ידניות. */
+let installEvent = null;
+const INSTALL_DISMISS_KEY = 'al_oto_gal_install_dismissed';
+
+function isIOS(){
+  const n = (typeof navigator !== 'undefined') ? navigator : {};
+  return /iPad|iPhone|iPod/.test(n.userAgent || '') ||
+         (n.platform === 'MacIntel' && n.maxTouchPoints > 1);
+}
+function installDismissed(){
+  try { return localStorage.getItem(INSTALL_DISMISS_KEY) === '1'; } catch(e){ return false; }
+}
+function dismissInstall(){
+  try { localStorage.setItem(INSTALL_DISMISS_KEY, '1'); } catch(e){}
+  const el = document.getElementById('install-strip');
+  if (el) el.hidden = true;
+}
+function paintInstallStrip(){
+  const strip = document.getElementById('install-strip');
+  if (!strip) return;
+  if (isStandalone() || installDismissed() || window.self !== window.top){
+    strip.hidden = true; return;                 // מותקן / נדחה / בתוך הטמעה
+  }
+  const ios = isIOS();
+  if (!installEvent && !ios){ strip.hidden = true; return; }
+  document.getElementById('install-ico').innerHTML = I.install;
+  document.getElementById('install-sub').textContent = ios
+    ? 'דרך כפתור השיתוף → הוספה למסך הבית'
+    : 'פתיחה במסך מלא, בלי סרגלי דפדפן';
+  document.getElementById('install-btn').textContent = ios ? 'איך עושים את זה?' : 'התקנה';
+  strip.hidden = false;
+}
+function doInstall(){
+  if (installEvent){
+    installEvent.prompt();
+    installEvent.userChoice.then(r => {
+      if (r && r.outcome === 'accepted') showToast('המשחק מותקן — חפשו אותו במסך הבית');
+      installEvent = null;
+      paintInstallStrip();
+    }).catch(()=>{});
+    return;
+  }
+  if (isIOS()){
+    askChoice('הוספה למסך הבית',
+      'בספארי: לחצו על כפתור השיתוף בתחתית המסך (ריבוע עם חץ למעלה), גללו ובחרו ״הוספה למסך הבית״, ואז ״הוספה״.', [
+      { label:'הבנתי', primary:true, action:()=>{} },
+      { label:'לא עכשיו — אל תציגו שוב', action:dismissInstall }
+    ]);
+    return;
+  }
+  askChoice('ההתקנה אינה זמינה כאן',
+    'נסו לפתוח את המשחק ישירות בדפדפן (לא בתוך אתר אחר), ואז תפריט הדפדפן ← ״התקנת אפליקציה״.', [
+    { label:'הבנתי', primary:true, action:()=>{} }
+  ]);
+}
+
 /* מסך מלא — בטאבלט ובנייד זה מה שמעלים את סרגלי הדפדפן ונותן חלון אמיתי */
 function fullscreenSupported(){
   const e = document.documentElement;
@@ -2692,8 +2778,8 @@ function registerServiceWorker(){
   });
 }
 function isStandalone(){
-  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
-      || window.navigator.standalone === true;
+  return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+      || !!(window.navigator && window.navigator.standalone === true);
 }
 
 function detectDevice(){
@@ -2747,6 +2833,16 @@ function toggleSoundEffects(){
 window.addEventListener('DOMContentLoaded', ()=>{
   validateCardMetadata();
   detectDevice();
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    installEvent = e;
+    paintInstallStrip();
+  });
+  window.addEventListener('appinstalled', () => {
+    installEvent = null;
+    dismissInstall();
+    showToast('המשחק הותקן בהצלחה');
+  });
   registerServiceWorker();
   window.addEventListener('resize', ()=>{ detectDevice(); fitCard(); syncTouchAction(); });
   if (window.visualViewport) window.visualViewport.addEventListener('resize', fitCard);

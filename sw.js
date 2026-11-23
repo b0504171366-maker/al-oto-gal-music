@@ -6,7 +6,7 @@
 
    בכל פרסום של גרסה חדשה — להעלות את המספר ב-CACHE.
 */
-const CACHE = 'al-oto-gal-v3';
+const CACHE = 'al-oto-gal-v4';
 const SHELL = ['./', './index.html', './manifest.webmanifest',
                './icon-192.png', './icon-512.png', './icon-maskable.png'];
 
