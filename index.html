@@ -759,10 +759,7 @@ let ambientMusic = {
 const MUSIC_BASE = /github\.io$/.test(location.hostname) ? './' :
   'https://b0504171366-maker.github.io/al-oto-gal-music/';
 const MUSIC_FILES = [
-  { name:'Sunset Plains',  file:'02-sunset-plains.mp3'  },
-  { name:'Mystical Piano', file:'03-mystical-piano.mp3' },
-  { name:'First Light',    file:'04-first-light.mp3'    },
-  { name:'Synthwave',      file:'01-synthwave.mp3'      }
+  { name:'מוזיקה רגועה', file:'ambient-95min.mp3' }     // 95 דקות — ערב שלם בלי מעברים
 ];
 const MUSIC_VOLUME = 0.42;
 const MUSIC_FADE_MS = 1500;
@@ -777,6 +774,7 @@ function initFilePlayer(){
   filePlayer.el = new Audio();
   filePlayer.el.preload = 'none';          // לא מוריד דבר עד הלחיצה הראשונה
   filePlayer.el.volume = 0;
+  filePlayer.el.loop = MUSIC_FILES.length === 1;     // רצועה אחת — לולאה חלקה בלי פער
   filePlayer.el.addEventListener('ended', ()=> advanceFile(true));
   filePlayer.el.addEventListener('error', onFileError);
   filePlayer.order = shuffleArray(MUSIC_FILES.map((_,i)=>i));
@@ -939,7 +937,9 @@ function updateMusicButtonUI(){
   const onFiles = filesAvailable() && filePlayer.on;
   const playing = onFiles || ambientMusic.isPlaying;
   btn.setAttribute('aria-pressed', playing ? 'true' : 'false');
-  nextBtn.hidden = !playing;
+  // "הבא" מוצג רק כשבאמת יש לאן לעבור
+  const canSkip = onFiles ? MUSIC_FILES.length > 1 : ambientMusic.tracks.length > 1;
+  nextBtn.hidden = !playing || !canSkip;
   const t = currentFile();
   btn.title = !playing ? 'מוזיקת אווירה'
     : 'מתנגן: ' + (onFiles && t ? t.name : ambientMusic.tracks[ambientMusic.currentTrackIndex].name);
@@ -2354,7 +2354,7 @@ function renderCard(){
   el.style.transform = ''; el.style.opacity = ''; el.style.transition = '';
   el.classList.remove('fly-r','fly-l','deal');
   void el.offsetWidth; el.classList.add('deal');
-  requestAnimationFrame(syncTouchAction);
+  (window.requestAnimationFrame || setTimeout)(syncTouchAction, 0);
   playCardDealSound();
 }
 
