@@ -2529,7 +2529,9 @@ function initCardSwipePhysics(){
   const el = document.getElementById('card');
   const bR = document.getElementById('badge-right'), bL = document.getElementById('badge-left');
   let sx = 0, sy = 0, dx = 0, tracking = false, committed = false, pid = null;
+  let canScroll = false;                             // האם יש בכלל לאן לגלול אנכית
   const SLOP = 8;                                    // כמה פיקסלים עד שמכריעים כיוון
+  const VKILL = 16;                                  // כמה אנכית עד שמוותרים על ההחלקה
 
   function paint(){
     el.style.transform = `translateX(${dx}px) rotate(${dx * 0.055}deg)`;
@@ -2555,6 +2557,8 @@ function initCardSwipePhysics(){
     if (gameState.isAnimatingCard) return;
     if (target && target.closest && target.closest('button, textarea, input')) return;
     tracking = true; committed = false;
+    const t = document.querySelector('.table');
+    canScroll = !!(t && t.scrollHeight > t.clientHeight + 1);
     sx = x; sy = y; dx = 0; pid = (id === undefined ? null : id);
     el.classList.remove('deal');      // משחררים את שליטת האנימציה על ה-transform
     el.style.transition = 'none';
@@ -2562,9 +2566,15 @@ function initCardSwipePhysics(){
   function move(x, y){
     if (!tracking) return;
     const mx = x - sx, my = y - sy;
+    const ax = Math.abs(mx), ay = Math.abs(my);
     if (!committed){
-      if (Math.abs(mx) < SLOP && Math.abs(my) < SLOP) return;   // עוד לא ברור
-      if (Math.abs(my) > Math.abs(mx)){ tracking = false; return; }  // אנכי — משחררים לדפדפן
+      // אצבע אמיתית נעה בקשת: כמעט תמיד יש ריחוף אנכי קל לפני הפנייה הצידה.
+      // לכן אסור להכריע לפי הדגימה הראשונה שחוצה את הסף — זה מה שהרג את
+      // ההחלקה בטאבלט בעוד שבעכבר, שנע בקו ישר, הכל נראה תקין.
+      if (ay >= VKILL && ay > ax * 1.8 && canScroll){
+        tracking = false; return;              // גלילה אנכית אמיתית — לדפדפן
+      }
+      if (ax < SLOP || ax < ay * 1.15) return; // עדיין לא ברור — ממשיכים לדגום
       committed = true;
       if (pid !== null){ try { el.setPointerCapture(pid); } catch(e){} }  // מכאן המחווה שלנו
     }
