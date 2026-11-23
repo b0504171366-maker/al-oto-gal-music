@@ -147,7 +147,7 @@ h1,h2,h3{font-family:var(--serif);font-weight:700;margin:0;line-height:1.2;text-
 .hairbar i{display:block;height:100%;background:var(--gold);transition:width .45s ease-out}
 
 .table{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;align-items:center;justify-content:center;padding:5px 16px;perspective:1400px}
-.deck{position:relative;width:min(258px,100%);flex:none}
+.deck{position:relative;width:var(--deck-w,258px);flex:none}
 .pile{position:absolute;inset:0;border-radius:11px;background:var(--surface);border:1px solid rgba(198,164,91,.2)}
 .pile:nth-child(1){transform:translate(7px,9px) rotate(2.2deg);opacity:.5}
 .pile:nth-child(2){transform:translate(-5px,5px) rotate(-1.6deg);opacity:.72}
@@ -167,18 +167,22 @@ h1,h2,h3{font-family:var(--serif);font-weight:700;margin:0;line-height:1.2;text-
 .card::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:11px;background-image:var(--noise);background-size:120px;opacity:.055;mix-blend-mode:overlay}
 .emboss{position:absolute;inset:7px;border-radius:7px;pointer-events:none;border:1px solid rgba(198,164,91,.3);box-shadow:0 1px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(230,208,155,.1)}
 .emboss::before{content:"";position:absolute;inset:3px;border-radius:5px;border:1px solid rgba(198,164,91,.12)}
-.card-in{grid-area:a;position:relative;z-index:2;display:flex;flex-direction:column;min-height:0;padding:20px 19px 16px}
+.card-in{grid-area:a;position:relative;z-index:2;display:flex;flex-direction:column;min-height:0;
+  padding:calc(var(--deck-px,258) * .077px) calc(var(--deck-px,258) * .074px) calc(var(--deck-px,258) * .062px)}
 
 .card-top{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .deckname{display:flex;align-items:center;gap:7px;color:var(--gold)}
-.deckname span{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.deckname span{font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  font-size:calc(var(--deck-px,258) * .041px * var(--fit,1))}
 /* direction:ltr — אחרת ה-bidi הופך "155 / 250" ל-"250 / 155" */
 .cardno{font-size:10.5px;color:rgba(185,170,168,.65);font-variant-numeric:tabular-nums;letter-spacing:.08em;direction:ltr}
 .card-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:13px 0}
-.card-text{font-family:var(--serif);font-weight:500;font-size:21px;line-height:1.52;margin:0;text-wrap:pretty}
-.card-text.sm{font-size:17.5px;line-height:1.56}
+/* גודל הטקסט נגזר מרוחב הקלף ומגורם התאמה ש-JS מקטין עד שהקלף נכנס לשטח */
+.card-text{font-family:var(--serif);font-weight:500;line-height:1.5;margin:0;text-wrap:pretty;
+  font-size:calc(var(--deck-px,258) * .0815px * var(--fit,1))}
+.card-text.sm{line-height:1.54;font-size:calc(var(--deck-px,258) * .0685px * var(--fit,1))}
 .card-foot{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid var(--hair)}
-.turn{font-size:11.5px;color:var(--muted)}
+.turn{color:var(--muted);font-size:calc(var(--deck-px,258) * .045px * var(--fit,1))}
 .turn b{color:var(--foil);font-weight:600}
 .heart{position:relative;width:30px;height:30px;border-radius:3px;flex:none;border:1px solid rgba(198,164,91,.26);background:rgba(0,0,0,.26);display:grid;place-items:center;color:var(--muted);transition:color .2s,border-color .2s,background .2s}
 .heart[aria-pressed="true"]{color:var(--foil);border-color:rgba(230,208,155,.55);background:rgba(198,164,91,.14)}
@@ -187,7 +191,8 @@ h1,h2,h3{font-family:var(--serif);font-weight:700;margin:0;line-height:1.2;text-
 
 /* תרשים + טיימר בתוך הקלף */
 .diagram{margin:0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:9px 0;display:flex;align-items:center;gap:11px}
-.diagram svg{flex:none;width:74px;height:52px}
+.diagram svg{flex:none;width:calc(var(--deck-px,258) * .287px * var(--fit,1));
+  height:calc(var(--deck-px,258) * .202px * var(--fit,1))}
 .diagram figcaption{font-size:11px;color:var(--muted);line-height:1.5}
 .timer{display:flex;align-items:center;gap:11px}
 .timer-ring{flex:none;width:38px;height:38px}
@@ -278,8 +283,9 @@ h1,h2,h3{font-family:var(--serif);font-weight:700;margin:0;line-height:1.2;text-
 .toast{position:absolute;left:50%;bottom:20px;transform:translate(-50%,14px);z-index:70;background:#2B0D18;border:1px solid rgba(198,164,91,.45);color:var(--ivory);font-size:12.5px;padding:10px 16px;border-radius:4px;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;max-width:86%;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
+/* מסך נמוך: רק מסך הפתיחה מצטמצם. גודל הקלף נקבע ע"י fitCard ואסור
+   לקבוע לו כאן font-size — זה דרס את כל מנגנון ההתאמה. */
 @media (max-height:620px){
-  .card-text{font-size:19px}
   .intro{gap:18px;padding:20px 24px}
   .boxart{width:84px;height:84px}
 }
@@ -295,70 +301,64 @@ h1,h2,h3{font-family:var(--serif);font-weight:700;margin:0;line-height:1.2;text-
 }
 /* התאמה למכשיר: במסך גדול עם מגע הקלף גדל ומנצל את השטח */
 @media (min-width:700px) and (min-height:720px){
-  .deck{width:min(324px,62vw)}
-  .card-in{padding:24px 23px 19px}
-  .card-text{font-size:25px;line-height:1.5}
-  .card-text.sm{font-size:20px}
-  .deckname span{font-size:11.5px}
-  .cardno,.turn{font-size:12px}
-  .diagram svg{width:88px;height:62px}
+  .cardno{font-size:12px}
   .intro,.choose,.album,.meter,.actions{max-width:520px}
   .topbar>*:first-child{margin-inline-start:max(0px,calc((100% - 520px)/2))}
   .topbar>*:last-child{margin-inline-end:max(0px,calc((100% - 520px)/2))}
   .btn{font-size:15.5px;min-height:52px}
   .spine b{font-size:12.5px}
 }
-/* נייד לרוחב: הקלף מוותר על יחס 2:3 והכפתורים עוברים לצידו.
-   ב-RTL העמודה הראשונה בגריד היא הימנית — ולכן הקלף מימין והפעולות משמאל. */
-@media (max-height:520px){
-  .topbar{padding:3px 16px}
-  .brandbtn{min-height:44px}
-  .brandbtn b{font-size:12.5px}
-
+/* פעולות לצד הקלף בכל מסך רחב שאינו גבוה — הטמעה באתר, טאבלט לרוחב,
+   מסך מחשב נמוך. זה מה שמשחרר ~120px לגובה הקלף.
+   ב-RTL העמודה הראשונה בגריד היא הימנית, ולכן הקלף מימין. */
+@media (min-width:760px) and (max-height:820px){
   #game-screen.active{
     display:grid;
-    grid-template-columns:1fr clamp(168px,26vw,224px);
+    grid-template-columns:1fr clamp(176px,22vw,232px);
     grid-template-rows:auto 1fr;
     grid-template-areas:"meter actions" "table actions";
     min-height:0;
   }
-  .meter{grid-area:meter;max-width:none;margin:0;padding:5px 14px 2px}
-  .table{grid-area:table;min-height:0;padding:4px 14px 8px}
+  .meter{grid-area:meter;max-width:none;margin:0;padding:7px 16px 3px}
+  .table{grid-area:table;min-height:0;padding:4px 16px 10px}
   .actions{
     grid-area:actions;align-self:center;
     max-width:none;width:auto;margin:0;
-    padding:8px 14px 8px 16px;gap:8px;
+    padding:10px 16px 10px 18px;gap:9px;
     border-inline-start:1px solid var(--hair);
   }
-  .row2{grid-template-columns:1fr;gap:8px}
-  .btn{min-height:46px;padding:11px 14px;font-size:14px}
+  .row2{grid-template-columns:1fr;gap:9px}
   .minor{flex-direction:column;gap:2px;align-items:stretch}
   .minor .dot{display:none}
-  .minor .btn-quiet{min-height:34px;padding:5px 0;font-size:11.5px}
+}
 
+/* מסך נמוך מאוד (נייד לרוחב): מוותרים על יחס 2:3 ומצמצמים את הכרום */
+@media (max-height:520px){
+  .topbar{padding:3px 16px}
+  .brandbtn{min-height:44px}
+  .brandbtn b{font-size:12.5px}
+  .meter{padding:5px 14px 2px}
+  .table{padding:4px 14px 8px}
+  .btn{min-height:46px;padding:11px 14px;font-size:14px}
+  .minor .btn-quiet{min-height:34px;padding:5px 0;font-size:11.5px}
   .card::before{padding-top:0}            /* ביטול רצפת 2:3 — קלף רוחבי */
-  .deck{width:min(430px,100%)}
-  .card-in{padding:14px 18px 12px}
+  /* הכרום מנותק מרוחב הקלף: אחרת קלף רחב מקבל ריפוד ענק וגבוה יותר,
+     ואז הרחבה דווקא מזיקה במקום לעזור. */
+  .card-in{padding:12px 16px 10px}
+  /* תקרת גופן — קלף רוחבי רחב לא צריך טקסט ענק */
+  .card-text{font-size:min(calc(var(--deck-px,258) * .0815px * var(--fit,1)), 26px)}
+  .card-text.sm{font-size:min(calc(var(--deck-px,258) * .0685px * var(--fit,1)), 22px)}
+  .deckname span{font-size:11px}
+  .turn{font-size:11.5px}
+  .diagram svg{width:60px;height:42px}
   .card-body{padding:9px 0;gap:9px}
-  .card-text{font-size:18px;line-height:1.45}
-  .card-text.sm{font-size:16px}
   .card-foot{padding-top:8px}
   .diagram{padding:6px 0}
-  .diagram svg{width:62px;height:44px}
   .pile:nth-child(1){transform:translate(6px,6px) rotate(1.6deg)}
   .pile:nth-child(2){transform:translate(-4px,4px) rotate(-1.2deg)}
   .guess{padding-top:7px;gap:5px}
   .guess-input{padding:6px 9px;font-size:14px}
   .guess .btn{min-height:40px}
-}
-/* מסכים צרים לרוחב — אין מקום לעמודה, חוזרים לערימה */
-@media (max-height:520px) and (max-width:660px){
-  #game-screen.active{display:flex;flex-direction:column}
-  .actions{border-inline-start:0;padding:6px 16px;align-self:stretch;width:100%;max-width:460px;margin-inline:auto}
-  .row2{grid-template-columns:1.42fr 1fr}
-  .minor{flex-direction:row;gap:10px}
-  .minor .dot{display:inline}
-  .meter{max-width:460px;margin-inline:auto}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
@@ -410,6 +410,9 @@ h1,h2,h3{font-family:var(--serif);font-weight:700;margin:0;line-height:1.2;text-
           </div>
 
           <button class="btn btn-gold" onclick="submitCoupleNames()">פותחים את החפיסה</button>
+          <button class="btn-quiet" id="btn-new-couple" onclick="startFreshCouple()" hidden>
+            <u>זוג חדש — מחיקת כל הנתונים מהמכשיר</u>
+          </button>
         </div>
       </div>
     </section>
@@ -439,7 +442,7 @@ h1,h2,h3{font-family:var(--serif);font-weight:700;margin:0;line-height:1.2;text-
           <!-- מידע בשורות שקטות ולא בתיבות, כדי שהפעולה הראשית תישאר בראש המסך -->
           <p class="statline" id="memory-line" hidden>
             <span id="memory-text"></span>
-            <button class="btn-link" id="btn-reset" onclick="resetSavedMemory()">איפוס</button>
+            <button class="btn-link" id="btn-reset" onclick="startFreshCouple()">זוג חדש · מחיקה</button>
           </p>
           <p class="statline" id="retired-line" hidden>
             <span id="retired-text"></span>
@@ -1684,6 +1687,9 @@ function showScreen(id){
 function openNamesScreen(){
   document.getElementById('input-partner-1').value = gameState.partner1 || '';
   document.getElementById('input-partner-2').value = gameState.partner2 || '';
+  const nc = document.getElementById('btn-new-couple');
+  if (nc) nc.hidden = !(gameState.partner1 || gameState.partner2 ||
+                        countByState('done') > 0 || gameState.favoriteCardIds.size > 0);
   showScreen('names-screen');
 }
 function submitCoupleNames(){
@@ -2171,25 +2177,39 @@ function saveCoupleMemory(){
   }
 }
 
-let resetArmed = false;
-function resetSavedMemory(){
-  const btn = document.getElementById('btn-reset');
-  if (!resetArmed){
-    resetArmed = true;
-    btn.textContent = 'בטוחים? לחצו שוב';
-    setTimeout(()=>{ if (resetArmed){ resetArmed = false; btn.textContent = 'איפוס'; } }, 4000);
-    return;
-  }
-  resetArmed = false;
+/* מחיקה מלאה — כולל השמות. זה מה שמאפשר למסור את המכשיר לזוג אחר. */
+function wipeEverything(){
   Store.clear();
+  gameState.partner1 = '';
+  gameState.partner2 = '';
   gameState.favoriteCardIds = new Set();
   gameState.cardStatus = {};
   gameState.roundNumber = 0;
   gameState.active = null;
-  btn.textContent = 'איפוס';
-  showToast('הכול אופס — מועדפים, סטטוסים והתקדמות');
-  goHome();
+  const i1 = document.getElementById('input-partner-1');
+  const i2 = document.getElementById('input-partner-2');
+  if (i1) i1.value = '';
+  if (i2) i2.value = '';
+  updateFavoritesBadge();
 }
+
+function startFreshCouple(){
+  const done = countByState('done'), favs = gameState.favoriteCardIds.size;
+  const who = (gameState.partner1 && gameState.partner2)
+    ? `הנתונים של ${gameState.partner1} ונועה`.replace('ונועה', 'ו' + gameState.partner2)
+    : 'כל הנתונים השמורים';
+  const dTxt = done === 1 ? 'קלף אחד שהושלם' : `${done} קלפים שהושלמו`;
+  const fTxt = favs === 1 ? 'מועדף אחד' : `${favs} מועדפים`;
+  askChoice('להתחיל עם זוג חדש?',
+    `${who} יימחקו מהמכשיר: ${dTxt}, ${fTxt}, וההתקדמות השמורה. אי אפשר לבטל.`, [
+    { label:'כן, מחקו והתחילו מחדש', primary:true,
+      action:()=>{ wipeEverything(); showToast('הכול נמחק — אפשר להזין שמות חדשים'); openNamesScreen(); } },
+    { label:'לא, חזרה', action:()=>{} }
+  ]);
+}
+
+/* נשאר לתאימות עם הקישור במסך הבית */
+function resetSavedMemory(){ startFreshCouple(); }
 function restoreRetired(){
   let n = 0;
   Object.keys(gameState.cardStatus).forEach(id=>{
@@ -2217,10 +2237,12 @@ function goHome(){
   } else resume.hidden = true;
 
   const done = countByState('done'), memLine = document.getElementById('memory-line');
-  if (done > 0){
+  const hasData = done > 0 || !!(gameState.partner1 || gameState.partner2) || gameState.favoriteCardIds.size > 0;
+  if (hasData){
     const avail = ALL_CARDS.filter(c => isEligible(c)).length;
-    document.getElementById('memory-text').textContent =
-      `השלמתם ${done} קלפים · ${avail} זמינים לסיבוב הבא.`;
+    document.getElementById('memory-text').textContent = done > 0
+      ? `השלמתם ${done} קלפים · ${avail} זמינים לסיבוב הבא.`
+      : 'הנתונים שלכם שמורים על המכשיר.';
     memLine.hidden = false;
   } else memLine.hidden = true;
 
@@ -2284,6 +2306,48 @@ function renderProgress(){
   document.getElementById('pile-1').hidden = left < 3;
   document.getElementById('pile-2').hidden = left < 2;
   document.getElementById('pile-3').hidden = left < 1;
+}
+
+/* מתאים את הקלף לשטח הפנוי: קודם רוחב לפי הגובה הזמין (יחס 2:3),
+   ואז מקטין את הטיפוגרפיה בצעדים עד שהקלף נכנס. כך אין גלילה לעולם,
+   ובמסך גדול הקלף גדל במקום להישאר קטן באמצע. */
+function fitCard(){
+  const table = document.querySelector('.table');
+  const deck  = document.querySelector('.deck');
+  const card  = document.getElementById('card');
+  if (!table || !deck || !card || typeof getComputedStyle !== 'function') return;
+
+  const cs = getComputedStyle(table);
+  const availH = table.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const availW = table.clientWidth  - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  if (availH < 40 || availW < 40) return;
+
+  const noRatio = !!(window.matchMedia && window.matchMedia('(max-height:520px)').matches);
+  // ברוחב w הרצפה של יחס 2:3 היא 1.5w. משאירים 2% מרווח לאנימציית
+  // השליפה שמגדילה רגעית ב-3%, אחרת נוצרת גלילה חולפת.
+  // קלפי הערימה הדקורטיביים בולטים כ-12px מתחת לקלף, ואנימציית השליפה
+  // מגדילה רגעית ב-3%. בלי המרווח הזה נוצרת גלילה של כמה פיקסלים.
+  const DECOR = 18;                      // כמה קלפי הערימה בולטים מתחת לקלף
+  const budget = availH - DECOR;
+  // בקלף רוחבי רחב יותר = פחות שורות = נמוך יותר, ולכן מנצלים את כל הרוחב
+  let w = noRatio ? Math.min(availW, 580)
+                  : Math.min(availW, budget / 1.5, 430);
+  w = Math.max(226, Math.round(w));
+
+  const root = document.documentElement.style;
+  deck.style.width = w + 'px';
+  root.setProperty('--deck-px', String(w));
+
+  // מקטינים טיפוגרפיה עד שהקלף נכנס. offsetHeight ולא getBoundingClientRect —
+  // האחרון מושפע מה-scale של האנימציה ומחזיר מדידה שגויה.
+  let fit = 1;
+  for (let i = 0; i < 16; i++){
+    root.setProperty('--fit', fit.toFixed(3));
+    if (card.offsetHeight <= budget) break;    // מול התקציב, לא מול הגובה המלא
+    fit -= 0.04;
+    const floor = noRatio ? 0.52 : 0.60;     // במסך נמוך מרשים כיווץ עמוק יותר
+    if (fit < floor){ root.setProperty('--fit', floor.toFixed(2)); break; }
+  }
 }
 
 /* touch-action נקבע לפי המצב: אם הקלף לא דורש גלילה, אין סיבה
@@ -2354,7 +2418,8 @@ function renderCard(){
   el.style.transform = ''; el.style.opacity = ''; el.style.transition = '';
   el.classList.remove('fly-r','fly-l','deal');
   void el.offsetWidth; el.classList.add('deal');
-  (window.requestAnimationFrame || setTimeout)(syncTouchAction, 0);
+  fitCard();
+  (window.requestAnimationFrame || setTimeout)(()=>{ fitCard(); syncTouchAction(); }, 0);
   playCardDealSound();
 }
 
@@ -2663,7 +2728,8 @@ window.addEventListener('DOMContentLoaded', ()=>{
   validateCardMetadata();
   detectDevice();
   registerServiceWorker();
-  window.addEventListener('resize', detectDevice);
+  window.addEventListener('resize', ()=>{ detectDevice(); fitCard(); syncTouchAction(); });
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', fitCard);
   document.addEventListener('fullscreenchange', paintFullscreenBtn);
   document.addEventListener('webkitfullscreenchange', paintFullscreenBtn);
   paintStaticIcons();
@@ -2699,7 +2765,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   });
 
   if (gameState.partner1 && gameState.partner2) goHome();
-  else showScreen('names-screen');
+  else openNamesScreen();
 });
 </script>
 </body>
