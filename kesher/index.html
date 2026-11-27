@@ -15,9 +15,14 @@
 <meta name="apple-mobile-web-app-title" content="קשר משפחתי">
 <style>
 :root{
-  --ground:#0A1428; --surface:#132240; --raised:#1D3157;
+  --ground:#070F20; --surface:#132240; --raised:#1D3157;
   --gold:#D9A441; --foil:#F2D398; --ivory:#F7F2E7; --muted:#A8B6CE;
   --flame:#FF9F43; --ok:#5FD08A; --no:#E0697A;
+  /* קלף ודיו — המגילה בנויה מהמשטחים האלה בלבד */
+  --parch-1:#F5EAD1; --parch-2:#EADCB9; --parch-3:#DECBA2; --parch-4:#CEB68A;
+  --ink:#2A1C0B; --ink-2:#4A3418; --wood:#6B4A20;
+  /* "האפשרות האחרת" — כחול קריר ומאופק, לא מצב שגיאה */
+  --cool:#9FB6D6; --cool-deep:#17253F;
   --fit:1; --deck-px:430;
 }
 *{box-sizing:border-box}
@@ -25,7 +30,9 @@
 html,body{height:100%}
 body{
   position:fixed; inset:0; margin:0; overflow:hidden;
-  background:var(--ground); color:var(--ivory);
+  /* לילה עמוק למעלה, מתחמם כלפי מטה אל עבר הנרות */
+  background:linear-gradient(177deg,#050B18 0%,#0A1428 38%,#132038 68%,#1E2338 88%,#2A2432 100%);
+  color:var(--ivory);
   font-family:"Heebo","Assistant",system-ui,"Segoe UI",sans-serif;
   overscroll-behavior:none; touch-action:manipulation;
   -webkit-text-size-adjust:100%;
@@ -33,17 +40,23 @@ body{
 }
 .app{position:relative; display:flex; flex-direction:column; height:100dvh; overflow:hidden}
 
-/* --- אור נרות: שתי הילות חמות מלמטה, ריצוד איטי מאוד (7.5 שניות) ובשינוי
-   אטימות של אחוזים בודדים בלבד. אסור שיסיח מהטקסט. --------------------- */
+/* --- אור נרות: פריחה חמה נמוכה על המסך, ריצוד איטי מאוד (7.5 שניות)
+   ובשינוי אטימות של אחוזים בודדים בלבד. אסור שיסיח מהטקסט. ------------- */
 .app::before{
   content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
   background:
-    radial-gradient(130% 78% at 50% 116%, rgba(255,159,67,.26), rgba(255,159,67,0) 62%),
-    radial-gradient(62% 46% at 16% 108%, rgba(217,164,65,.16), transparent 62%),
-    radial-gradient(62% 46% at 84% 108%, rgba(217,164,65,.16), transparent 62%);
+    radial-gradient(44% 30% at 50% 103%, rgba(255,214,140,.30), rgba(255,170,70,.12) 48%, transparent 76%),
+    radial-gradient(130% 82% at 50% 118%, rgba(255,159,67,.24), rgba(255,159,67,0) 64%),
+    radial-gradient(62% 48% at 13% 110%, rgba(217,164,65,.18), transparent 62%),
+    radial-gradient(62% 48% at 87% 110%, rgba(217,164,65,.18), transparent 62%);
   animation:candle 7.5s ease-in-out infinite;
 }
-@keyframes candle{0%,100%{opacity:.9}50%{opacity:1}}
+@keyframes candle{0%,100%{opacity:.92}34%{opacity:.97}50%{opacity:1}72%{opacity:.95}}
+/* ויניטה רכה — מכנסת את העין למרכז */
+.app::after{
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:radial-gradient(118% 92% at 50% 44%, transparent 44%, rgba(2,5,12,.42) 82%, rgba(1,3,8,.62) 100%);
+}
 
 .stage{position:relative; z-index:1; display:flex; flex:1; min-height:0}
 .screen{display:none; flex:1; min-height:0}
@@ -55,9 +68,12 @@ body{
 
 /* --- טיפוגרפיה בסיסית ------------------------------------------------- */
 .h1{
-  margin:0; font-size:max(26px,calc(44px*var(--fit))); font-weight:800;
-  letter-spacing:-.02em; color:var(--foil);
-  text-shadow:0 calc(2px*var(--fit)) calc(18px*var(--fit)) rgba(217,164,65,.28);
+  margin:0; font-family:"Frank Ruhl Libre","David",Georgia,serif;
+  font-size:max(26px,calc(46px*var(--fit))); font-weight:700;
+  letter-spacing:-.01em;
+  background:linear-gradient(176deg,#FFF4D8 0%,var(--foil) 34%,var(--gold) 72%,#B98C33 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 calc(2px*var(--fit)) calc(16px*var(--fit)) rgba(217,164,65,.32));
 }
 .h2{margin:0; font-size:max(20px,calc(28px*var(--fit))); font-weight:700; color:var(--foil)}
 .lead{margin:0; font-size:max(16px,calc(20px*var(--fit))); color:var(--muted); line-height:1.4}
@@ -71,25 +87,60 @@ body{
   background:linear-gradient(90deg,transparent,rgba(217,164,65,.55),transparent);
 }
 
-/* --- כפתורים ---------------------------------------------------------- */
+/* --- כפתורים ----------------------------------------------------------
+   הכול בפלטה של המשחק: הזהב הוא "כן", והכחול הקריר הוא "האפשרות האחרת".
+   אין ירוק/אדום שטוח — זה היה נראה כמו טופס ניהול. העומק נבנה מהדרגתיות,
+   מהבהק לאורך הקצה העליון ומצל מתחת. הכפתורים גדולים: בן שמונה על טאבלט
+   צריך למצוא אותם בלי לכוון. ------------------------------------------ */
 .btn{
-  font:inherit; cursor:pointer; color:var(--ivory);
-  border:1px solid rgba(217,164,65,.45);
-  background:linear-gradient(180deg,var(--raised),var(--surface));
+  position:relative; font:inherit; cursor:pointer; color:var(--ivory);
+  border:1px solid rgba(217,164,65,.5);
+  background:linear-gradient(180deg,#27406B,var(--raised) 46%,#12213D);
   border-radius:calc(14px*var(--fit));
   padding:calc(13px*var(--fit)) calc(22px*var(--fit));
   font-size:max(18px,calc(22px*var(--fit))); font-weight:700;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),
+             inset 0 calc(-2px*var(--fit)) calc(6px*var(--fit)) rgba(0,0,0,.3),
+             0 calc(4px*var(--fit)) calc(12px*var(--fit)) rgba(2,6,14,.5);
   transition:transform .12s ease, filter .12s ease, box-shadow .12s ease;
 }
 .btn:hover{filter:brightness(1.1)}
-.btn:active{transform:translateY(1px)}
+.btn:active{
+  transform:translateY(calc(2px*var(--fit)));
+  box-shadow:inset 0 calc(3px*var(--fit)) calc(9px*var(--fit)) rgba(0,0,0,.45),
+             0 1px 2px rgba(2,6,14,.4);
+  filter:brightness(.96);
+}
 .btn:focus-visible{outline:3px solid var(--foil); outline-offset:2px}
 .btn[disabled]{opacity:.4; cursor:not-allowed; filter:none; transform:none}
-.btn--gold{background:linear-gradient(180deg,var(--foil),var(--gold) 55%,#B07E2B); color:#1C1304; border-color:var(--foil)}
-.btn--ok{background:linear-gradient(180deg,#7FE8AA,var(--ok) 55%,#3BA06A); color:#06220F; border-color:#9BF0BE}
-.btn--no{background:linear-gradient(180deg,#F08F9C,var(--no) 55%,#B9465A); color:#2B0812; border-color:#F7B3BC}
-.btn--ghost{background:transparent; border-color:rgba(168,182,206,.32); color:var(--muted); font-weight:600}
-.btn--danger{background:transparent; border-color:rgba(224,105,122,.55); color:var(--no)}
+/* זהב מוטבע: בהק עליון, גוף חם, קצה תחתון כבד וזוהר רך סביב */
+.btn--gold,.btn--ok{
+  background:linear-gradient(180deg,#FFF0CE 0%,var(--foil) 18%,var(--gold) 58%,#AE7A27 92%,#8E6119 100%);
+  color:#231804; border-color:#FFEBC2; text-shadow:0 1px 0 rgba(255,255,255,.35);
+  box-shadow:inset 0 calc(2px*var(--fit)) 0 rgba(255,255,255,.6),
+             inset 0 calc(-3px*var(--fit)) calc(7px*var(--fit)) rgba(96,62,12,.45),
+             0 calc(6px*var(--fit)) calc(16px*var(--fit)) rgba(2,6,14,.55),
+             0 0 calc(22px*var(--fit)) rgba(217,164,65,.22);
+}
+.btn--gold:active,.btn--ok:active{
+  background:linear-gradient(180deg,#E8CE95 0%,var(--gold) 55%,#9A6A1F 100%);
+  box-shadow:inset 0 calc(3px*var(--fit)) calc(10px*var(--fit)) rgba(78,50,10,.5);
+}
+/* "האפשרות האחרת": משטח עמוק וקר, מסגרת מאופקת. לא שגיאה. */
+.btn--no{
+  background:linear-gradient(180deg,#22334F,var(--cool-deep) 55%,#101A2C);
+  color:var(--cool); border-color:rgba(159,182,214,.55);
+  box-shadow:inset 0 1px 0 rgba(190,212,240,.22),
+             inset 0 calc(-2px*var(--fit)) calc(7px*var(--fit)) rgba(0,0,0,.4),
+             0 calc(4px*var(--fit)) calc(12px*var(--fit)) rgba(2,6,14,.5);
+}
+.btn--no:hover{color:#CFDFF2; border-color:rgba(190,212,240,.8)}
+.btn--ghost{
+  background:rgba(14,24,44,.5); border-color:rgba(168,182,206,.3);
+  color:var(--muted); font-weight:600;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 calc(2px*var(--fit)) calc(8px*var(--fit)) rgba(2,6,14,.4);
+}
+.btn--danger{background:rgba(40,16,24,.5); border-color:rgba(224,105,122,.5); color:var(--no); box-shadow:none}
 .btn--big{font-size:max(22px,calc(30px*var(--fit))); padding:calc(19px*var(--fit)) calc(26px*var(--fit))}
 .btn--wide{width:100%}
 .row{display:flex; gap:calc(10px*var(--fit)); flex-wrap:wrap}
@@ -108,35 +159,49 @@ body{
 .input--age{text-align:center}
 
 /* --- פס המגילה: הגיבורה הוויזואלית ------------------------------------
-   עשרה מקטעים בין שני מוטות גלילה. מקטע פתוח זוהר בגווני קלף וזהב,
-   המקטע הבא מסומן בקו מקווקו והילה חלשה. ------------------------------ */
+   סצנה אחת לכל מקטע, בין שני מוטות גלילה. סצנה שהושלמה זוהרת בגווני
+   קלף וזהב, הסצנה שבעיצומה מסומנת בקו מקווקו והילה חלשה. ------------- */
 .scrollbar{
   display:flex; align-items:stretch; gap:calc(6px*var(--fit));
   flex:0 0 auto; height:calc(60px*var(--fit)); min-height:46px;
 }
+/* מוט גלילה אנכי: גליל עץ־זהב עם בהק לאורכו ושני כפתורי קצה */
 .rod{
-  flex:0 0 calc(15px*var(--fit)); min-width:11px; border-radius:calc(8px*var(--fit));
-  background:linear-gradient(90deg,#2E2110,#7A5C28 32%,#E6C77E 52%,#6B4F22 78%,#2E2110);
-  box-shadow:0 0 0 1px rgba(0,0,0,.55), 0 calc(4px*var(--fit)) calc(12px*var(--fit)) rgba(0,0,0,.45);
+  position:relative;
+  flex:0 0 calc(18px*var(--fit)); min-width:13px; border-radius:calc(9px*var(--fit));
+  background:linear-gradient(90deg,#1E1407,#4A3114 16%,#8A6228 36%,#EFD59A 50%,#8A6228 64%,#4A3114 84%,#1E1407);
+  box-shadow:0 0 0 1px rgba(0,0,0,.6), 0 calc(5px*var(--fit)) calc(14px*var(--fit)) rgba(0,0,0,.5);
 }
+.rod::before,.rod::after{
+  content:''; position:absolute; inset-inline:calc(-3px*var(--fit));
+  height:calc(7px*var(--fit)); min-height:5px; border-radius:calc(4px*var(--fit));
+  background:linear-gradient(90deg,#241705,#6B4A20 30%,#E3C486 52%,#5C3F1A 76%,#241705);
+  box-shadow:0 0 0 1px rgba(0,0,0,.6);
+}
+.rod::before{top:calc(-3px*var(--fit))}
+.rod::after{bottom:calc(-3px*var(--fit))}
 .segs{
   display:flex; flex:1; min-width:0; gap:calc(4px*var(--fit));
-  padding:calc(5px*var(--fit)); border-radius:calc(11px*var(--fit));
-  background:linear-gradient(180deg,#0C1A33,#081124);
-  border:1px solid rgba(217,164,65,.22);
-  box-shadow:inset 0 calc(2px*var(--fit)) calc(8px*var(--fit)) rgba(0,0,0,.5);
+  padding:calc(5px*var(--fit)); border-radius:calc(6px*var(--fit));
+  background:linear-gradient(180deg,#0A1628,#060D1C);
+  border:1px solid rgba(120,85,35,.4);
+  box-shadow:inset 0 calc(3px*var(--fit)) calc(10px*var(--fit)) rgba(0,0,0,.6);
 }
 .seg{
   flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center;
-  border-radius:calc(7px*var(--fit)); background:#101D37; color:#4B5C79;
+  border-radius:calc(4px*var(--fit)); background:#0E1A30; color:#4B5C79;
   font-size:max(16px,calc(19px*var(--fit))); font-weight:800;
   border:1px solid rgba(255,255,255,.05);
   transition:background .5s ease, color .5s ease, box-shadow .5s ease;
 }
+/* סצנה שנפתחה = פיסת קלף שיצאה מהגליל */
 .seg--open{
-  background:linear-gradient(180deg,#F6E4B8,var(--gold) 68%,#B07E2B);
-  color:#2A1B06; border-color:var(--foil);
-  box-shadow:0 0 calc(13px*var(--fit)) rgba(217,164,65,.45);
+  background:
+    radial-gradient(70% 60% at 30% 20%, rgba(255,255,255,.55), transparent 70%),
+    linear-gradient(180deg,var(--parch-1),var(--parch-3) 62%,var(--parch-4));
+  color:var(--ink); border-color:rgba(120,85,35,.55);
+  box-shadow:0 0 calc(13px*var(--fit)) rgba(217,164,65,.35),
+             inset 0 -1px 0 rgba(120,85,35,.3);
 }
 .seg--next{
   border:2px dashed rgba(242,211,152,.7); color:var(--foil); background:#13223F;
@@ -147,18 +212,153 @@ body{
   50%{box-shadow:0 0 calc(15px*var(--fit)) rgba(242,211,152,.42)}
 }
 
+/* --- המגילה שבצד מסך המשחק --------------------------------------------
+   נקודה אחת = שורה אחת, ולכן החשיפה קורית עשרות פעמים בערב. היא חייבת
+   להיות שקטה: השורה החדשה נכנסת מלמטה בחצי שנייה ונשארת. הרגע הגדול
+   נשמר להשלמת סצנה, וזה קורה בערך פעם בשבע נקודות. ------------------- */
+.game{display:flex; flex:1; min-height:0; min-width:0; gap:calc(14px*var(--fit))}
+.game__main{
+  display:flex; flex-direction:column; flex:1 1 auto;
+  min-width:0; min-height:0; gap:calc(10px*var(--fit));
+}
+.megilla{
+  flex:0 0 calc(312px*var(--fit)); max-width:34%; min-height:0;
+  display:flex; flex-direction:column; background:transparent; border:0;
+  filter:drop-shadow(0 calc(12px*var(--fit)) calc(26px*var(--fit)) rgba(2,6,14,.6));
+}
+/* --- המוט האופקי: גליל עץ שהקלף יוצא ממנו ---------------------------- */
+.roller{
+  position:relative; z-index:2;
+  flex:0 0 calc(17px*var(--fit)); min-height:13px; min-width:0;
+  border-radius:calc(9px*var(--fit));
+  background:linear-gradient(180deg,#1C1206,#3F2A11 14%,#7A5522 32%,#F0D69C 50%,#875F27 66%,#432D12 86%,#1A1105);
+  box-shadow:0 0 0 1px rgba(0,0,0,.65),
+             0 calc(4px*var(--fit)) calc(10px*var(--fit)) rgba(0,0,0,.45);
+}
+/* כפתורי הקצה של הגליל — בולטים מעט מהקלף */
+.roller::before,.roller::after{
+  content:''; position:absolute; top:calc(-3px*var(--fit)); bottom:calc(-3px*var(--fit));
+  width:calc(9px*var(--fit)); min-width:7px; border-radius:calc(5px*var(--fit));
+  background:linear-gradient(180deg,#201405,#6B4A20 30%,#E8CB90 50%,#5C3F1A 72%,#201405);
+  box-shadow:0 0 0 1px rgba(0,0,0,.65);
+}
+.roller::before{inset-inline-start:calc(-4px*var(--fit))}
+.roller::after{inset-inline-end:calc(-4px*var(--fit))}
+
+/* --- הקלף עצמו: קרם חם, לא אחיד, עם קצה כהה וצל פנימי ---------------- */
+.parch{
+  position:relative; z-index:1; flex:1 1 auto; min-height:0;
+  display:flex; flex-direction:column; gap:calc(7px*var(--fit));
+  margin:calc(-2px*var(--fit)) calc(5px*var(--fit));
+  padding:calc(13px*var(--fit)) calc(15px*var(--fit)) calc(11px*var(--fit));
+  background:
+    radial-gradient(58% 34% at 16% 8%, rgba(255,255,255,.55), transparent 72%),
+    radial-gradient(40% 26% at 86% 72%, rgba(150,106,40,.20), transparent 74%),
+    radial-gradient(26% 18% at 58% 38%, rgba(150,106,40,.13), transparent 76%),
+    radial-gradient(22% 14% at 30% 88%, rgba(126,88,32,.16), transparent 78%),
+    linear-gradient(184deg,var(--parch-1) 0%,var(--parch-2) 38%,var(--parch-3) 74%,var(--parch-4) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(120,85,35,.34),
+    inset 0 calc(14px*var(--fit)) calc(16px*var(--fit)) calc(-12px*var(--fit)) rgba(78,52,18,.55),
+    inset 0 calc(-14px*var(--fit)) calc(16px*var(--fit)) calc(-12px*var(--fit)) rgba(78,52,18,.55),
+    inset calc(9px*var(--fit)) 0 calc(11px*var(--fit)) calc(-10px*var(--fit)) rgba(78,52,18,.4),
+    inset calc(-9px*var(--fit)) 0 calc(11px*var(--fit)) calc(-10px*var(--fit)) rgba(78,52,18,.4);
+}
+/* קמט אורכי אחד — מספיק כדי שהמשטח לא יקרא כמלבן מודפס */
+.parch::before{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(97deg,transparent 28%,rgba(255,255,255,.22) 33%,
+             rgba(132,94,36,.10) 37%,transparent 44%);
+}
+.megilla__head{
+  position:relative; display:flex; flex-direction:column; gap:calc(2px*var(--fit));
+  min-width:0; padding-bottom:calc(6px*var(--fit));
+  border-bottom:1px solid rgba(120,85,35,.28);
+}
+.megilla__k{
+  font-size:max(16px,calc(17px*var(--fit))); font-weight:700; color:#8A6228;
+  letter-spacing:.04em;
+}
+.megilla__scene{
+  font-family:"Frank Ruhl Libre","David",Georgia,serif;
+  font-size:max(19px,calc(24px*var(--fit))); font-weight:700; color:var(--ink);
+  line-height:1.2;
+}
+.mlines{
+  position:relative;
+  list-style:none; margin:0; padding:0; flex:1 1 auto; min-height:0; overflow:auto;
+  display:flex; flex-direction:column; gap:calc(7px*var(--fit));
+  scrollbar-width:thin; scrollbar-color:rgba(120,85,35,.5) transparent;
+  /* השורות הוותיקות דועכות אל עבר הגליל המגולגל שלמעלה */
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,rgba(0,0,0,.35) calc(10px*var(--fit)),#000 calc(34px*var(--fit)),#000 100%);
+          mask-image:linear-gradient(180deg,transparent 0,rgba(0,0,0,.35) calc(10px*var(--fit)),#000 calc(34px*var(--fit)),#000 100%);
+}
+/* דיו, לא טקסט ממשק: סריף, שחור־חום חם ושורות מרווחות */
+.mline{
+  font-family:"Frank Ruhl Libre","David",Georgia,serif;
+  font-size:max(16px,calc(18px*var(--fit))); line-height:1.62;
+  color:rgba(74,52,24,.55); transition:color .6s ease;
+}
+/* השורות של הסצנה שבעיצומה בולטות; מה שמאחור נשאר קריא אבל נסוג */
+.mline--live{color:var(--ink-2)}
+.mline--last{color:var(--ink); font-weight:700}
+.mline--src::after{
+  content:''; display:inline-block; vertical-align:.22em;
+  width:calc(7px*var(--fit)); height:calc(7px*var(--fit));
+  min-width:5px; min-height:5px; margin-inline-start:calc(6px*var(--fit));
+  border-radius:50%; background:#A8761F; box-shadow:0 0 calc(6px*var(--fit)) rgba(168,118,31,.6);
+}
+.mline--new{animation:lineIn .5s cubic-bezier(.2,.84,.3,1) both}
+@keyframes lineIn{
+  from{opacity:0; transform:translateY(calc(9px*var(--fit)))}
+  to{opacity:1; transform:none}
+}
+.megilla__empty{
+  font-family:"Frank Ruhl Libre","David",Georgia,serif;
+  font-size:max(16px,calc(18px*var(--fit))); line-height:1.6; color:rgba(74,52,24,.72);
+}
+.megilla__note{
+  font-size:max(16px,calc(16px*var(--fit))); color:#6E4E1E; font-weight:600;
+  display:flex; align-items:center; gap:calc(6px*var(--fit)); line-height:1.3;
+  padding-top:calc(6px*var(--fit)); border-top:1px solid rgba(120,85,35,.28);
+}
+.megilla__note i{
+  width:calc(7px*var(--fit)); height:calc(7px*var(--fit)); min-width:5px; min-height:5px;
+  border-radius:50%; background:#A8761F; flex:0 0 auto;
+}
+
+/* מסך צר: הגליל יורד למטה ברצועה נמוכה במקום לעמוד בצד */
+@media (max-width:760px), (orientation:portrait){
+  .game{flex-direction:column}
+  .megilla{flex:0 0 auto; max-width:none; max-height:30%}
+}
+
 /* --- לוח ניקוד -------------------------------------------------------- */
 .board{display:flex; flex:0 0 auto; gap:calc(8px*var(--fit)); min-width:0}
+/* לוח הניקוד — לוחיות מורמות עם קו שיער זהוב, לא גלולות שטוחות */
 .chip{
+  position:relative; overflow:hidden;
   flex:1 1 0; min-width:0; display:flex; align-items:center; gap:calc(10px*var(--fit));
-  padding:calc(8px*var(--fit)) calc(12px*var(--fit));
+  padding:calc(9px*var(--fit)) calc(13px*var(--fit));
   border-radius:calc(13px*var(--fit));
-  background:linear-gradient(180deg,var(--raised),#101E39);
-  border:1px solid rgba(255,255,255,.07);
+  background:linear-gradient(170deg,#2A3557,#1B2642 48%,#121B30);
+  border:1px solid rgba(217,164,65,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),
+             0 calc(6px*var(--fit)) calc(14px*var(--fit)) rgba(1,4,10,.5);
 }
 .chip--turn{
-  border-color:var(--foil); background:linear-gradient(180deg,#2A3F6B,#16294C);
-  box-shadow:0 0 calc(16px*var(--fit)) rgba(217,164,65,.35);
+  border-color:var(--foil);
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255,205,130,.22), transparent 70%),
+    linear-gradient(170deg,#36487A,#1F3159 50%,#15243F);
+  box-shadow:inset 0 1px 0 rgba(255,232,180,.4),
+             0 0 calc(24px*var(--fit)) rgba(217,164,65,.35),
+             0 calc(8px*var(--fit)) calc(18px*var(--fit)) rgba(1,4,10,.55);
+}
+/* פתיל זהב דק לאורך הקצה העליון של הצוות שבתור */
+.chip--turn::before{
+  content:''; position:absolute; inset-inline:0; top:0; height:calc(3px*var(--fit));
+  background:linear-gradient(90deg,transparent,var(--foil) 22%,#FFF3D6 50%,var(--foil) 78%,transparent);
 }
 .chip__txt{min-width:0; display:flex; flex-direction:column}
 .chip__name{
@@ -172,22 +372,41 @@ body{
 .chip__score{
   margin-inline-start:auto; font-size:max(24px,calc(34px*var(--fit)));
   font-weight:800; color:var(--ivory); font-variant-numeric:tabular-nums;
+  text-shadow:0 calc(2px*var(--fit)) calc(10px*var(--fit)) rgba(1,4,10,.7);
 }
-.chip--turn .chip__score{color:var(--flame)}
+.chip--turn .chip__score{color:#FFC27A; text-shadow:0 0 calc(16px*var(--fit)) rgba(255,159,67,.6)}
 
 /* --- הקלף ------------------------------------------------------------- */
+/* הקלף הוא עצם שמונח על השולחן: משטח חם יותר מהעמוד, קו שיער זהוב,
+   חותמת חפיסה דהויה ברקע וצל אמיתי שמרים אותו מעל הרקע. ------------- */
 .card{
   position:relative; flex:1; min-height:0; display:flex; flex-direction:column;
   gap:calc(10px*var(--fit)); width:100%; max-width:calc(var(--deck-px)*2.1px);
   margin:0 auto; padding:calc(16px*var(--fit)) calc(22px*var(--fit));
-  border-radius:calc(22px*var(--fit));
+  border-radius:calc(20px*var(--fit));
   background:
-    radial-gradient(150% 90% at 50% 0%, rgba(217,164,65,.13), transparent 62%),
-    linear-gradient(180deg,var(--surface),#0D1A32);
-  border:1px solid rgba(217,164,65,.38);
-  box-shadow:0 calc(18px*var(--fit)) calc(42px*var(--fit)) rgba(0,0,0,.55),
-             inset 0 0 0 1px rgba(255,255,255,.03);
+    radial-gradient(130% 70% at 50% -6%, rgba(255,205,130,.17), transparent 60%),
+    radial-gradient(90% 70% at 50% 108%, rgba(255,159,67,.10), transparent 66%),
+    linear-gradient(168deg,#2A3350 0%,#222B45 32%,#1A2338 66%,#181D2E 100%);
+  border:1px solid rgba(242,211,152,.5);
+  box-shadow:
+    0 calc(2px*var(--fit)) 0 rgba(255,255,255,.07) inset,
+    0 0 0 calc(5px*var(--fit)) rgba(217,164,65,.07),
+    0 calc(22px*var(--fit)) calc(50px*var(--fit)) rgba(1,4,10,.66),
+    0 calc(5px*var(--fit)) calc(14px*var(--fit)) rgba(1,4,10,.5);
 }
+/* חותמת החפיסה: נראית, אך לא מתחרה בטקסט */
+.card__mark{
+  position:absolute; inset-inline-end:calc(16px*var(--fit)); bottom:calc(12px*var(--fit));
+  width:calc(168px*var(--fit)); height:calc(168px*var(--fit));
+  pointer-events:none; opacity:.13; z-index:0;
+}
+.card__mark svg{width:100%; height:100%; display:block}
+.card__top,.roles,.card__body,.card__foot{position:relative; z-index:1}
+/* קלף סודי שעוד חתום הוא "גב של קלף": שורת התפקידים והכותרת התחתונה
+   מתפנות כדי שהחותם, ההסבר וכפתור החשיפה ייכנסו בשלמותם בגוף הקלף.
+   שתיהן חוזרות ברגע שהקלף נחשף. */
+.card--sealed .roles,.card--sealed .card__foot{display:none}
 /* פינות זהב — מוסיפות תחושת קלף מודפס ולא תיבה */
 .card::before,.card::after{
   content:''; position:absolute; width:calc(26px*var(--fit)); height:calc(26px*var(--fit));
@@ -206,7 +425,10 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
 .stamp{
   flex:0 0 auto; display:flex; align-items:center; justify-content:center;
   width:calc(46px*var(--fit)); height:calc(46px*var(--fit)); min-width:34px; min-height:34px;
-  border-radius:50%; border:1px solid rgba(217,164,65,.5); background:#0B1730;
+  border-radius:50%; border:1px solid rgba(242,211,152,.55);
+  background:radial-gradient(70% 70% at 36% 26%, #27324F, #0D1527 72%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),
+             0 calc(3px*var(--fit)) calc(9px*var(--fit)) rgba(1,4,10,.5);
 }
 .stamp svg{width:66%; height:66%; display:block}
 .card__deck{
@@ -227,9 +449,13 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
 
 /* חלוקת התפקידים — שורה נפרדת מעל הטקסט */
 .roles{
-  flex:0 0 auto; text-align:center; padding:calc(8px*var(--fit)) calc(12px*var(--fit));
-  border-radius:calc(12px*var(--fit)); background:rgba(255,159,67,.1);
-  border:1px solid rgba(255,159,67,.35);
+  flex:0 0 auto; text-align:center; padding:calc(9px*var(--fit)) calc(12px*var(--fit));
+  border-radius:calc(12px*var(--fit));
+  background:
+    radial-gradient(90% 120% at 50% -10%, rgba(255,186,110,.22), transparent 70%),
+    linear-gradient(176deg,rgba(255,159,67,.14),rgba(255,159,67,.04));
+  border:1px solid rgba(255,159,67,.4);
+  box-shadow:inset 0 1px 0 rgba(255,210,160,.3);
 }
 .roles__names{
   font-size:max(20px,calc(28px*var(--fit))); font-weight:800; color:var(--flame);
@@ -253,9 +479,23 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
 /* הצצה פרטית: מה שמוצג במקום הטקסט. הטקסט עצמו אינו נכתב ל-DOM כלל. */
 .shroud{
   display:flex; flex-direction:column; align-items:center; text-align:center;
-  gap:calc(14px*var(--fit));
+  gap:calc(13px*var(--fit));
 }
-.shroud__t{font-size:max(22px,calc(36px*var(--fit))); font-weight:800; color:var(--foil); line-height:1.2}
+/* חותם שעווה — הקלף עוד חתום */
+.shroud__seal{
+  width:calc(86px*var(--fit)); height:calc(86px*var(--fit)); min-width:62px; min-height:62px;
+  display:flex; align-items:center; justify-content:center; border-radius:50%;
+  background:radial-gradient(64% 64% at 36% 28%, #C8632F, #7E2E16 70%, #561B0C);
+  box-shadow:inset 0 calc(2px*var(--fit)) calc(4px*var(--fit)) rgba(255,190,150,.4),
+             inset 0 calc(-4px*var(--fit)) calc(9px*var(--fit)) rgba(40,8,2,.6),
+             0 calc(7px*var(--fit)) calc(18px*var(--fit)) rgba(1,4,10,.6);
+}
+.shroud__seal svg{width:56%; height:56%; display:block; fill:none;
+  stroke:rgba(255,222,190,.8); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round}
+.shroud__t{
+  font-family:"Frank Ruhl Libre","David",Georgia,serif;
+  font-size:max(22px,calc(34px*var(--fit))); font-weight:700; color:var(--foil); line-height:1.2;
+}
 .shroud__s{font-size:max(16px,calc(20px*var(--fit))); color:var(--muted); max-width:36ch; line-height:1.4}
 
 .card__foot{
@@ -315,8 +555,10 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
   display:flex; align-items:center; gap:calc(10px*var(--fit));
   padding:calc(9px*var(--fit)) calc(12px*var(--fit));
   border-radius:calc(12px*var(--fit));
-  background:linear-gradient(180deg,var(--raised),#101E39);
-  border:1px solid rgba(255,255,255,.07);
+  background:linear-gradient(170deg,#2A3557,#1B2642 50%,#121B30);
+  border:1px solid rgba(217,164,65,.2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),
+             0 calc(5px*var(--fit)) calc(12px*var(--fit)) rgba(1,4,10,.45);
 }
 .person__name{
   font-size:max(18px,calc(22px*var(--fit))); font-weight:700; min-width:0;
@@ -340,12 +582,21 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
   grid-template-columns:repeat(auto-fit,minmax(calc(230px*var(--fit)),1fr));
   overflow:auto;
 }
+/* כרטיס צוות — אותו עצם כמו הקלף, בקטן */
 .team{
-  display:flex; flex-direction:column; gap:calc(8px*var(--fit));
-  padding:calc(14px*var(--fit)); border-radius:calc(18px*var(--fit));
-  background:linear-gradient(180deg,var(--surface),#0D1A32);
-  border:1px solid rgba(217,164,65,.32);
-  box-shadow:0 calc(10px*var(--fit)) calc(26px*var(--fit)) rgba(0,0,0,.4);
+  position:relative; display:flex; flex-direction:column; gap:calc(8px*var(--fit));
+  padding:calc(15px*var(--fit)); border-radius:calc(16px*var(--fit));
+  background:
+    radial-gradient(120% 60% at 50% -6%, rgba(255,205,130,.14), transparent 62%),
+    linear-gradient(168deg,#2A3350,#202940 40%,#161D2F);
+  border:1px solid rgba(242,211,152,.38);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1),
+             0 calc(14px*var(--fit)) calc(30px*var(--fit)) rgba(1,4,10,.52);
+}
+.team::after{
+  content:''; position:absolute; inset-inline:calc(14px*var(--fit)); top:0;
+  height:calc(2px*var(--fit));
+  background:linear-gradient(90deg,transparent,rgba(242,211,152,.55),transparent);
 }
 .team__no{
   font-size:max(20px,calc(26px*var(--fit))); font-weight:800; color:var(--foil);
@@ -368,7 +619,10 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
   width:100%; margin:0 auto}
 .panel{
   padding:calc(14px*var(--fit)) calc(18px*var(--fit)); border-radius:calc(16px*var(--fit));
-  background:rgba(19,34,64,.7); border:1px solid rgba(217,164,65,.25);
+  background:linear-gradient(170deg,rgba(38,50,80,.82),rgba(14,22,40,.82));
+  border:1px solid rgba(217,164,65,.26);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),
+             0 calc(10px*var(--fit)) calc(24px*var(--fit)) rgba(1,4,10,.42);
   display:flex; flex-direction:column; gap:calc(8px*var(--fit));
 }
 .panel--warn{border-color:rgba(224,105,122,.5); background:rgba(224,105,122,.08)}
@@ -378,38 +632,63 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
 /* --- חשיפת קטע מגילה -------------------------------------------------- */
 .overlay{
   position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center;
-  padding:calc(18px*var(--fit)); background:rgba(4,9,20,.93);
+  padding:calc(26px*var(--fit)) calc(18px*var(--fit)); background:rgba(3,7,16,.94);
 }
+/* הרגע הגדול: המגילה עצמה נפרשת על המסך — קלף אמיתי בין שני גלילים */
 .overlay__panel{
-  width:min(calc(900px*var(--fit)),96%); max-height:94%;
-  display:flex; flex-direction:column; gap:calc(10px*var(--fit));
-  padding:calc(22px*var(--fit)) calc(26px*var(--fit));
-  border-radius:calc(22px*var(--fit));
+  position:relative;
+  width:min(calc(900px*var(--fit)),96%); max-height:92%;
+  display:flex; flex-direction:column; gap:calc(9px*var(--fit));
+  padding:calc(24px*var(--fit)) calc(30px*var(--fit));
   background:
-    radial-gradient(120% 70% at 50% 0%, rgba(217,164,65,.16), transparent 60%),
-    linear-gradient(180deg,#1A2A4C,#0B1730);
-  border:1px solid var(--gold);
-  box-shadow:0 0 calc(70px*var(--fit)) rgba(217,164,65,.3);
+    radial-gradient(50% 30% at 14% 6%, rgba(255,255,255,.55), transparent 72%),
+    radial-gradient(38% 26% at 88% 80%, rgba(150,106,40,.2), transparent 74%),
+    radial-gradient(24% 16% at 56% 44%, rgba(150,106,40,.12), transparent 76%),
+    linear-gradient(183deg,var(--parch-1) 0%,var(--parch-2) 40%,var(--parch-3) 76%,var(--parch-4) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(120,85,35,.34),
+    inset 0 calc(18px*var(--fit)) calc(20px*var(--fit)) calc(-15px*var(--fit)) rgba(78,52,18,.5),
+    inset 0 calc(-18px*var(--fit)) calc(20px*var(--fit)) calc(-15px*var(--fit)) rgba(78,52,18,.5),
+    0 calc(24px*var(--fit)) calc(60px*var(--fit)) rgba(0,0,0,.6),
+    0 0 calc(90px*var(--fit)) rgba(217,164,65,.22);
   animation:unseal .75s cubic-bezier(.16,.84,.26,1) both;
 }
+.overlay__panel::before,.overlay__panel::after{
+  content:''; position:absolute; inset-inline:calc(-10px*var(--fit));
+  height:calc(18px*var(--fit)); border-radius:calc(9px*var(--fit));
+  background:linear-gradient(180deg,#1C1206,#3F2A11 14%,#7A5522 32%,#F0D69C 50%,#875F27 66%,#432D12 86%,#1A1105);
+  box-shadow:0 0 0 1px rgba(0,0,0,.65), 0 calc(6px*var(--fit)) calc(16px*var(--fit)) rgba(0,0,0,.5);
+}
+.overlay__panel::before{top:calc(-13px*var(--fit))}
+.overlay__panel::after{bottom:calc(-13px*var(--fit))}
 @keyframes unseal{
   from{transform:translateY(calc(26px*var(--fit))) scale(.9); opacity:0}
   to{transform:none; opacity:1}
 }
 .overlay__kicker{
-  font-size:max(16px,calc(19px*var(--fit))); font-weight:800; color:var(--gold);
-  letter-spacing:.08em;
+  font-size:max(16px,calc(19px*var(--fit))); font-weight:700; color:#8A6228;
+  letter-spacing:.06em;
 }
-.overlay__title{margin:0; font-size:max(26px,calc(42px*var(--fit))); font-weight:800; color:var(--foil); line-height:1.15}
+.overlay__title{
+  margin:0; font-family:"Frank Ruhl Libre","David",Georgia,serif;
+  font-size:max(26px,calc(42px*var(--fit))); font-weight:700; color:var(--ink); line-height:1.15;
+}
 .overlay__body{min-height:0; overflow:auto; display:flex; flex-direction:column; gap:calc(12px*var(--fit))}
-.overlay__text{margin:0; font-size:max(19px,calc(27px*var(--fit))); line-height:1.4; color:var(--ivory)}
+.overlay__text{
+  margin:0; font-family:"Frank Ruhl Libre","David",Georgia,serif;
+  font-size:max(19px,calc(26px*var(--fit))); line-height:1.6; color:var(--ink);
+}
 .adults{
-  padding:calc(12px*var(--fit)) calc(14px*var(--fit)); border-radius:calc(13px*var(--fit));
-  background:rgba(217,164,65,.09); border-inline-start:3px solid var(--gold);
+  padding:calc(12px*var(--fit)) calc(14px*var(--fit)); border-radius:calc(4px*var(--fit));
+  background:rgba(138,98,40,.1); border-inline-start:3px solid #8A6228;
   display:flex; flex-direction:column; gap:calc(5px*var(--fit));
 }
-.adults__h{font-size:max(16px,calc(20px*var(--fit))); font-weight:800; color:var(--gold)}
-.adults__t{font-size:max(16px,calc(21px*var(--fit))); line-height:1.42; color:var(--ivory)}
+.adults__h{font-size:max(16px,calc(20px*var(--fit))); font-weight:800; color:#7A5520}
+.adults__t{font-size:max(16px,calc(20px*var(--fit))); line-height:1.5; color:var(--ink-2);
+  font-family:"Frank Ruhl Libre","David",Georgia,serif;
+  display:flex; flex-direction:column; gap:calc(8px*var(--fit))}
+.adults__p{margin:0}
+.adults__p + .adults__p{padding-top:calc(8px*var(--fit)); border-top:1px solid rgba(120,85,35,.3)}
 
 /* --- מסך סיכום -------------------------------------------------------- */
 .summary{flex:1; min-height:0; display:flex; flex-direction:column; gap:calc(10px*var(--fit))}
@@ -417,35 +696,177 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
 .summary__col{flex:1 1 calc(300px*var(--fit)); min-width:min(100%,260px);
   display:flex; flex-direction:column; min-height:0; gap:calc(8px*var(--fit))}
 .winner{
-  padding:calc(14px*var(--fit)) calc(18px*var(--fit)); border-radius:calc(18px*var(--fit));
-  background:linear-gradient(180deg,rgba(242,211,152,.2),rgba(217,164,65,.08));
+  position:relative; padding:calc(15px*var(--fit)) calc(18px*var(--fit));
+  border-radius:calc(16px*var(--fit));
+  background:
+    radial-gradient(90% 120% at 50% -20%, rgba(255,214,140,.3), transparent 68%),
+    linear-gradient(176deg,rgba(242,211,152,.2),rgba(217,164,65,.06));
   border:1px solid var(--gold); text-align:center;
+  box-shadow:inset 0 1px 0 rgba(255,243,214,.35),
+             0 calc(12px*var(--fit)) calc(30px*var(--fit)) rgba(1,4,10,.5),
+             0 0 calc(44px*var(--fit)) rgba(217,164,65,.18);
 }
 .winner__k{font-size:max(16px,calc(20px*var(--fit))); color:var(--gold); font-weight:800}
-.winner__n{font-size:max(24px,calc(38px*var(--fit))); font-weight:800; color:var(--foil); line-height:1.2}
+.winner__n{
+  font-family:"Frank Ruhl Libre","David",Georgia,serif;
+  font-size:max(24px,calc(38px*var(--fit))); font-weight:700; color:var(--foil); line-height:1.2;
+  text-shadow:0 calc(2px*var(--fit)) calc(14px*var(--fit)) rgba(217,164,65,.3);
+}
 .table{display:flex; flex-direction:column; gap:calc(6px*var(--fit)); min-height:0; overflow:auto}
 .trow{
   display:flex; align-items:center; gap:calc(10px*var(--fit));
-  padding:calc(9px*var(--fit)) calc(13px*var(--fit)); border-radius:calc(11px*var(--fit));
-  background:rgba(29,49,87,.7); border:1px solid rgba(255,255,255,.06);
+  padding:calc(10px*var(--fit)) calc(13px*var(--fit)); border-radius:calc(11px*var(--fit));
+  background:linear-gradient(170deg,rgba(42,53,87,.85),rgba(18,27,48,.85));
+  border:1px solid rgba(217,164,65,.18);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1),
+             0 calc(4px*var(--fit)) calc(10px*var(--fit)) rgba(1,4,10,.4);
   font-size:max(18px,calc(22px*var(--fit))); font-weight:700;
 }
-.trow--top{border-color:var(--gold); background:rgba(217,164,65,.14)}
+.trow--top{
+  border-color:var(--gold);
+  background:linear-gradient(170deg,rgba(217,164,65,.22),rgba(217,164,65,.07));
+  box-shadow:inset 0 1px 0 rgba(255,243,214,.3),
+             0 0 calc(22px*var(--fit)) rgba(217,164,65,.22);
+}
 .trow b{margin-inline-start:auto; font-size:max(20px,calc(28px*var(--fit))); font-variant-numeric:tabular-nums}
 .stars{list-style:none; margin:0; padding:0; min-height:0; overflow:auto;
   display:flex; flex-direction:column; gap:calc(6px*var(--fit))}
 .stars li{
-  padding:calc(9px*var(--fit)) calc(13px*var(--fit)); border-radius:calc(11px*var(--fit));
-  background:rgba(255,159,67,.1); border-inline-start:3px solid var(--flame);
-  font-size:max(16px,calc(20px*var(--fit))); line-height:1.35;
+  padding:calc(10px*var(--fit)) calc(13px*var(--fit)); border-radius:calc(11px*var(--fit));
+  background:linear-gradient(170deg,rgba(255,159,67,.16),rgba(255,159,67,.05));
+  border:1px solid rgba(255,159,67,.2); border-inline-start:3px solid var(--flame);
+  box-shadow:0 calc(4px*var(--fit)) calc(10px*var(--fit)) rgba(1,4,10,.35);
+  font-size:max(16px,calc(20px*var(--fit))); line-height:1.4; white-space:pre-line;
 }
 .empty{font-size:max(16px,calc(19px*var(--fit))); color:var(--muted)}
+
+/* --- רצף הפתיחה: המגילה נמצאת ------------------------------------------
+   אין וידאו ואין קובץ חיצוני — הכול SVG בקו אחד ואנימציות CSS. הרצף נפתח
+   בנקודת אור אחת בחלל חשוך, מגלה צנצנת חרס חתומה, שובר את החותם, מרים
+   ממנה מגילה מגולגלת, פורש אותה ומסיים בשם המשחק. 8.4 שניות.
+   כל האנימציות תלויות במחלקה .go, ולכן הסרה והחזרה שלה מריצות את הרצף
+   מחדש — זה מה שמאפשר הקרנה חוזרת מהתפריט. ---------------------------- */
+.intro{
+  position:fixed; inset:0; z-index:60; display:flex;
+  align-items:center; justify-content:center;
+  background:radial-gradient(70% 55% at 50% 46%, #0A1022 0%, #04070F 58%, #010205 100%);
+}
+.intro__scene{
+  position:relative; width:min(92vw, calc(100vh*1.3)); max-width:calc(820px*var(--fit));
+  display:flex; align-items:center; justify-content:center;
+}
+.intro__svg{width:100%; height:auto; display:block; overflow:visible}
+.intro__svg *{transform-box:fill-box}
+/* שם המשחק — HTML ולא SVG, כדי שהעברית תיפול נכון מימין לשמאל */
+.intro__title{
+  position:absolute; inset-inline:0; top:50%; transform:translateY(-50%);
+  text-align:center; opacity:0; pointer-events:none;
+}
+.intro__t1{
+  font-family:"Frank Ruhl Libre","David",Georgia,serif;
+  font-size:max(34px,calc(72px*var(--fit))); font-weight:700; line-height:1.1;
+  background:linear-gradient(176deg,#FFF7E2,var(--foil) 38%,var(--gold) 78%,#B98C33);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 0 calc(26px*var(--fit)) rgba(217,164,65,.5));
+}
+.intro__t2{
+  margin-top:calc(8px*var(--fit));
+  font-size:max(16px,calc(22px*var(--fit))); color:var(--muted); font-weight:600;
+}
+/* הדילוג גלוי כל הזמן — בפעם השישית אף אחד לא רוצה לראות את זה שוב */
+.intro__skip{
+  position:absolute; top:calc(16px*var(--fit)); inset-inline-end:calc(16px*var(--fit));
+  z-index:2; display:flex; align-items:center; gap:calc(8px*var(--fit));
+}
+.intro__skip svg{
+  width:calc(20px*var(--fit)); min-width:16px; height:auto; display:block;
+  fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+}
+/* --- שלבי הרצף -------------------------------------------------------- */
+.intro .i-glow,.intro .i-spark,.intro .i-jar,.intro .i-roll,
+.intro .i-sheet,.intro .i-rollerL,.intro .i-rollerR,.intro .i-ink,
+.intro .i-seal-a,.intro .i-seal-b{opacity:0}
+.intro.go .i-spark  {animation:iSpark 1.5s ease-out .15s both}
+.intro.go .i-glow   {animation:iGlow 7.6s ease-in-out .15s both}
+.intro.go .i-jar    {animation:iJar 1.6s ease-out 1.0s both}
+.intro.go .i-seal-a {animation:iSealA 1.5s cubic-bezier(.3,.1,.2,1) 2.5s both}
+.intro.go .i-seal-b {animation:iSealB 1.5s cubic-bezier(.3,.1,.2,1) 2.6s both}
+.intro.go .i-roll   {animation:iRoll 2.0s cubic-bezier(.3,.7,.2,1) 3.9s both}
+.intro.go .i-jarOut {animation:iFadeOut 1.1s ease-in 5.1s both}
+.intro.go .i-sheet  {animation:iUnroll 1.7s cubic-bezier(.26,.9,.3,1) 5.2s both}
+.intro.go .i-rollerL{animation:iRodL 1.7s cubic-bezier(.26,.9,.3,1) 5.2s both}
+.intro.go .i-rollerR{animation:iRodR 1.7s cubic-bezier(.26,.9,.3,1) 5.2s both}
+.intro.go .i-ink    {animation:iInk .55s ease-out both}
+.intro.go .i-ink:nth-of-type(1){animation-delay:6.1s}
+.intro.go .i-ink:nth-of-type(2){animation-delay:6.26s}
+.intro.go .i-ink:nth-of-type(3){animation-delay:6.42s}
+.intro.go .i-ink:nth-of-type(4){animation-delay:6.58s}
+.intro.go .i-ink:nth-of-type(5){animation-delay:6.74s}
+.intro.go .i-stage  {animation:iFadeOut 1.0s ease-in 7.0s both}
+.intro.go .intro__title{animation:iTitle 1.5s cubic-bezier(.2,.8,.3,1) 7.1s both}
+
+@keyframes iSpark{
+  0%{opacity:0; transform:scale(.2)}
+  22%{opacity:1; transform:scale(1)}
+  100%{opacity:.9; transform:scale(.8)}
+}
+@keyframes iGlow{
+  0%{opacity:0; transform:scale(.12)}
+  18%{opacity:.75; transform:scale(.55)}
+  46%{opacity:1; transform:scale(1)}
+  100%{opacity:.9; transform:scale(1.05)}
+}
+@keyframes iJar{
+  0%{opacity:0; transform:translateY(calc(6px*var(--fit)))}
+  100%{opacity:1; transform:none}
+}
+@keyframes iSealA{
+  0%{opacity:1; transform:none}
+  18%{opacity:1; transform:translate(-2px,-1px) rotate(-5deg)}
+  100%{opacity:0; transform:translate(-46px,-30px) rotate(-54deg)}
+}
+@keyframes iSealB{
+  0%{opacity:1; transform:none}
+  18%{opacity:1; transform:translate(2px,-1px) rotate(5deg)}
+  100%{opacity:0; transform:translate(46px,-26px) rotate(50deg)}
+}
+@keyframes iRoll{
+  0%{opacity:0; transform:translateY(46px)}
+  22%{opacity:1}
+  100%{opacity:1; transform:translateY(-74px)}
+}
+@keyframes iUnroll{
+  0%{opacity:0; transform:scaleX(.02)}
+  14%{opacity:1}
+  100%{opacity:1; transform:scaleX(1)}
+}
+@keyframes iRodL{
+  0%{opacity:0; transform:translateX(118px)}
+  14%{opacity:1}
+  100%{opacity:1; transform:none}
+}
+@keyframes iRodR{
+  0%{opacity:0; transform:translateX(-118px)}
+  14%{opacity:1}
+  100%{opacity:1; transform:none}
+}
+@keyframes iInk{from{opacity:0; transform:translateY(3px)}to{opacity:.85; transform:none}}
+@keyframes iFadeOut{from{opacity:1}to{opacity:0}}
+@keyframes iTitle{
+  0%{opacity:0; transform:translateY(calc(-50% + 18px)) scale(.94)}
+  100%{opacity:1; transform:translateY(-50%) scale(1)}
+}
 
 @media (prefers-reduced-motion:reduce){
   .app::before{animation:none}
   .seg--next{animation:none}
   .overlay__panel{animation:none}
-  .btn,.seg,.timer__arc{transition:none}
+  .mline--new{animation:none}
+  .btn,.seg,.mline,.timer__arc{transition:none}
+  /* הפתיחה מוצגת כפריים אחד נייח — שם המשחק בלבד, בלי שום תנועה */
+  .intro *,.intro.go *{animation:none!important; transition:none!important}
+  .intro .i-stage{opacity:0}
+  .intro .intro__title{opacity:1; transform:translateY(-50%)}
 }
 </style>
 </head>
@@ -515,10 +936,13 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
         <h2 class="h2" id="menu-story-title">המגילה</h2>
         <div class="scrollbar">
           <span class="rod" aria-hidden="true"></span>
-          <div class="segs" id="menu-scroll-segs"></div>
+          <div class="segs" id="menu-scene-pips"></div>
           <span class="rod" aria-hidden="true"></span>
         </div>
         <p class="lead" id="menu-progress"></p>
+        <div class="row">
+          <button class="btn btn--ghost" type="button" onclick="playIntro()">איך נמצאה המגילה</button>
+        </div>
       </div>
       <div class="panel">
         <p class="lead" id="menu-teams-line"></p>
@@ -543,13 +967,11 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
 
   <!-- ===== 4. מסך משחק ================================================ -->
   <section class="screen" id="game-screen">
-    <div class="scrollbar" id="scroll-bar">
-      <span class="rod" aria-hidden="true"></span>
-      <div class="segs" id="scroll-segs"></div>
-      <span class="rod" aria-hidden="true"></span>
-    </div>
+    <div class="game">
+    <div class="game__main">
     <div class="board" id="scoreboard"></div>
     <div class="card" id="card">
+      <span class="card__mark" id="card-mark" aria-hidden="true"></span>
       <div class="card__top">
         <span class="stamp" id="card-stamp" aria-hidden="true"></span>
         <span class="card__deck" id="card-deck"></span>
@@ -567,6 +989,10 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
       <div class="card__body" id="card-body">
         <p class="card__text" id="card-text"></p>
         <div class="shroud" id="card-shroud" hidden>
+          <span class="shroud__seal" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/>
+              <path d="M12 6.4v11.2M6.4 12h11.2"/><circle cx="12" cy="12" r="3.2"/></svg>
+          </span>
           <div class="shroud__t">קחו את הטאבלט הצידה</div>
           <div class="shroud__s">הקלף הזה נראה רק לצוות שבתור. שאר השולחן לא אמור
             לראות אותו — הניחוש הוא כל העניין.</div>
@@ -592,6 +1018,24 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
       <span id="game-progress"></span>
       <button class="btn btn--ghost" type="button" onclick="pauseRound()">הפסקה</button>
     </div>
+    </div><!-- /game__main -->
+
+    <!-- הגליל שבצד: כל נקודה מוסיפה שורה אחת, בלי להפריע למשחק -->
+    <aside class="megilla" id="megilla-side" aria-label="המגילה שנמצאה">
+      <span class="roller" aria-hidden="true"></span>
+      <div class="parch">
+        <div class="megilla__head">
+          <div class="megilla__k" id="megilla-kicker"></div>
+          <div class="megilla__scene" id="megilla-scene"></div>
+        </div>
+        <ol class="mlines" id="megilla-lines" aria-live="polite" aria-relevant="additions"></ol>
+        <div class="megilla__note" id="megilla-legend" hidden>
+          <i aria-hidden="true"></i><span>נקודת זהב — יש מה לספר על השורה הזאת בסוף הסצנה</span>
+        </div>
+      </div>
+      <span class="roller" aria-hidden="true"></span>
+    </aside>
+    </div><!-- /game -->
   </section>
 
   <!-- ===== 5. מסך סיכום =============================================== -->
@@ -606,7 +1050,7 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
           <h2 class="h2">המגילה</h2>
           <div class="scrollbar">
             <span class="rod" aria-hidden="true"></span>
-            <div class="segs" id="summary-scroll-segs"></div>
+            <div class="segs" id="summary-scene-pips"></div>
             <span class="rod" aria-hidden="true"></span>
           </div>
           <p class="lead" id="summary-progress"></p>
@@ -625,20 +1069,117 @@ html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:
 
   </main>
 
-  <!-- חשיפת קטע מגילה — משתלטת על כל המסך -->
-  <div class="overlay" id="segment-overlay" hidden>
+  <!-- ===== רצף הפתיחה: המגילה נמצאת ==================================
+       SVG בקו אחד ואנימציות CSS בלבד — אין וידאו, אין תמונה, אין קובץ
+       חיצוני. מוצג אוטומטית רק בהפעלה הראשונה (S.introSeen), וניתן
+       להקרנה חוזרת מהתפריט. כפתור הדילוג גלוי מהרגע הראשון. -------- -->
+  <div class="intro" id="intro" hidden>
+    <div class="intro__scene">
+      <svg class="intro__svg" viewBox="0 0 440 320" aria-hidden="true">
+        <defs>
+          <radialGradient id="ig-spark" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stop-color="#FFF8E8" stop-opacity=".95"/>
+            <stop offset="22%"  stop-color="#FFD48A" stop-opacity=".55"/>
+            <stop offset="55%"  stop-color="#D98F32" stop-opacity=".18"/>
+            <stop offset="100%" stop-color="#D98F32" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="ig-clay" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#33200F"/>
+            <stop offset="22%"  stop-color="#7A4D26"/>
+            <stop offset="50%"  stop-color="#B57D4C"/>
+            <stop offset="76%"  stop-color="#6B4120"/>
+            <stop offset="100%" stop-color="#2A1A0B"/>
+          </linearGradient>
+          <linearGradient id="ig-wax" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stop-color="#D06E36"/>
+            <stop offset="55%"  stop-color="#8A3418"/>
+            <stop offset="100%" stop-color="#4E1608"/>
+          </linearGradient>
+          <linearGradient id="ig-parch" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#F7EDD6"/>
+            <stop offset="46%"  stop-color="#EBDCB9"/>
+            <stop offset="100%" stop-color="#D4BD8E"/>
+          </linearGradient>
+          <linearGradient id="ig-wood" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#1C1206"/>
+            <stop offset="30%"  stop-color="#7A5522"/>
+            <stop offset="50%"  stop-color="#F0D69C"/>
+            <stop offset="70%"  stop-color="#875F27"/>
+            <stop offset="100%" stop-color="#1A1105"/>
+          </linearGradient>
+        </defs>
+
+        <g class="i-stage">
+          <!-- 1. חלל חשוך ונקודת אור אחת -->
+          <circle class="i-glow"  cx="220" cy="166" r="150" fill="url(#ig-spark)"/>
+          <circle class="i-spark" cx="220" cy="166" r="3.4" fill="#FFF8E8"/>
+
+          <!-- 4. המגילה המגולגלת עולה מתוך הצנצנת (מאחורי גוף הצנצנת) -->
+          <g class="i-roll">
+            <rect x="211" y="150" width="18" height="76" rx="9" fill="url(#ig-parch)"/>
+            <rect x="211" y="150" width="18" height="7"  rx="3.5" fill="url(#ig-wood)"/>
+            <rect x="211" y="219" width="18" height="7"  rx="3.5" fill="url(#ig-wood)"/>
+            <path d="M220 160v56" stroke="rgba(132,94,36,.45)" stroke-width="1.4"/>
+          </g>
+
+          <!-- 2. צנצנת חרס סתומה בשעווה. העטיפה i-jarOut מעמעמת אותה
+               כשהמגילה כבר נפרשת, כדי שהפריים האחרון יהיה המגילה בלבד. -->
+          <g class="i-jarOut"><g class="i-jar">
+            <path d="M198 196h44l8 17c11 23 14 45 6 64-7 18-21 29-36 29s-29-11-36-29c-8-19-5-41 6-64z"
+                  fill="url(#ig-clay)"/>
+            <path d="M194 182h52v15h-52z" fill="url(#ig-clay)"/>
+            <ellipse cx="220" cy="182" rx="26" ry="7" fill="#1A1008"/>
+            <path d="M206 216c-7 17-9 35-4 50" stroke="rgba(255,226,186,.3)"
+                  stroke-width="4" fill="none" stroke-linecap="round"/>
+            <path d="M236 224c5 14 6 29 2 41" stroke="rgba(0,0,0,.3)"
+                  stroke-width="4" fill="none" stroke-linecap="round"/>
+            <!-- 3. החותם נשבר לשניים ועף -->
+            <path class="i-seal-a" d="M220 172a24 10 0 0 0 0 20z" fill="url(#ig-wax)"/>
+            <path class="i-seal-b" d="M220 172a24 10 0 0 1 0 20z" fill="url(#ig-wax)"/>
+          </g></g>
+
+          <!-- 5. הקלף נפרש בין שני גלילים, והאותיות מופיעות -->
+          <g>
+            <rect class="i-sheet" x="106" y="52" width="228" height="104" rx="2"
+                  fill="url(#ig-parch)"/>
+            <g class="i-ink"><rect x="146" y="70"  width="148" height="5" rx="2.5" fill="#3A2810"/></g>
+            <g class="i-ink"><rect x="128" y="88"  width="184" height="5" rx="2.5" fill="#3A2810"/></g>
+            <g class="i-ink"><rect x="152" y="106" width="142" height="5" rx="2.5" fill="#3A2810"/></g>
+            <g class="i-ink"><rect x="128" y="124" width="178" height="5" rx="2.5" fill="#3A2810"/></g>
+            <g class="i-ink"><rect x="176" y="142" width="96"  height="5" rx="2.5" fill="#3A2810"/></g>
+            <rect class="i-rollerL" x="92"  y="42" width="16" height="124" rx="8" fill="url(#ig-wood)"/>
+            <rect class="i-rollerR" x="332" y="42" width="16" height="124" rx="8" fill="url(#ig-wood)"/>
+          </g>
+        </g>
+      </svg>
+      <div class="intro__title">
+        <div class="intro__t1">קשר משפחתי</div>
+        <div class="intro__t2">מגילה אחת, משפחה אחת, ערב אחד</div>
+      </div>
+    </div>
+    <button class="btn btn--ghost intro__skip" id="intro-skip" type="button" onclick="endIntro()">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M18 5v14M15 12L6 5v14l9-7z"/>
+      </svg>
+      <span>דילוג</span>
+    </button>
+  </div>
+
+  <!-- השלמת סצנה — הרגע הגדול, בערך פעם בשבע נקודות.
+       חשיפת שורה בודדת לא עוצרת את המשחק; היא נכנסת לגליל שבצד. -->
+  <div class="overlay" id="scene-overlay" hidden>
     <div class="overlay__panel">
-      <div class="overlay__kicker" id="segment-kicker"></div>
-      <h2 class="overlay__title" id="segment-title"></h2>
+      <div class="overlay__kicker" id="scene-kicker"></div>
+      <h2 class="overlay__title" id="scene-title"></h2>
       <div class="overlay__body">
-        <p class="overlay__text" id="segment-text"></p>
-        <div class="adults">
+        <p class="overlay__text" id="scene-text"></p>
+        <div class="adults" id="scene-adults" hidden>
           <div class="adults__h">לבוגרים שבחבורה</div>
-          <div class="adults__t" id="segment-adults"></div>
+          <div class="adults__t" id="scene-adults-text"></div>
         </div>
       </div>
       <div class="row row--end">
-        <button class="btn btn--gold btn--big" type="button" onclick="closeSegment()">ממשיכים</button>
+        <button class="btn btn--gold btn--big" type="button" onclick="closeScene()">ממשיכים</button>
       </div>
     </div>
   </div>
@@ -657,7 +1198,9 @@ const KESHER = window.KESHER;
 KESHER.MIN_PLAYERS = 4;
 KESHER.MAX_TEAMS = 4;
 
-KESHER.formTeams = function(players){
+KESHER.formTeams = function(players, options){
+  const opts = options || {};
+  const doShuffle = opts.shuffle !== false;   // ברירת מחדל: אקראי
   if (!Array.isArray(players) || players.length < KESHER.MIN_PLAYERS){
     throw new Error('צריך לפחות ' + KESHER.MIN_PLAYERS + ' משתתפים');
   }
@@ -673,39 +1216,53 @@ KESHER.formTeams = function(players){
   const need = [];
   for (let i = 0; i < count; i++) need.push(base + (i < rem ? 1 : 0));
 
-  // שיבוץ מקצוות הרשימה פנימה: הצעיר ביותר עם הבוגר ביותר.
-  // כשיש עוד צוותים עם מקום לזוג שלם (need>=2) מחלקים אליהם זוג-זוג בתורות;
-  // כשנשארו רק צוותים שחסר להם חבר בודד (need===1), מפצלים את הזוג הבא בין
-  // שניים מהם כדי לא לחרוג מהגודל הדרוש (זה מה שמשאיר את הפער <= 1).
-  let lo = 0, hi = sorted.length - 1, i = 0;
-  const findWithCapacity = (start, min) => {
-    for (let k = 0; k < count; k++){
-      const idx = (start + k) % count;
-      if (need[idx] >= min) return idx;
-    }
-    return -1;
-  };
-  while (lo < hi){
-    const t = findWithCapacity(i % count, 2);
-    if (t !== -1){
-      teams[t].members.push(sorted[lo++]);
-      teams[t].members.push(sorted[hi--]);
-      need[t] -= 2;
-      i = t + 1;
-    } else {
-      const t1 = findWithCapacity(i % count, 1);
-      teams[t1].members.push(sorted[lo++]);
-      need[t1] -= 1;
-      const t2 = findWithCapacity(t1 + 1, 1);
-      teams[t2].members.push(sorted[hi--]);
-      need[t2] -= 1;
-      i = t2 + 1;
+  // מחצית צעירה ומחצית בוגרת: אינדקסים 0..hi-1 הם "צעירים", hi..end הם
+  // "בוגרים". hi הוא גם סך החברים ה"צעירים" הדרושים על פני כל הצוותים —
+  // בדיוק count (אחד לכל צוות) כשיש מספר זוגי של חברים לכל צוות, ועוד
+  // קצת כשיש צוותים עם 3 חברים (need[t]===3 → 1 צעיר + 2 בוגרים, או
+  // ראו בהמשך). כדי לשמר תמיד "פער עצום" במקום זיווג שכן-לשכן, מחשבים
+  // תקן נפרד: לכל צוות דרוש *בדיוק אחד* מהצעירים ביותר (quotaYoung),
+  // והשאר (need[t]-1) מהבוגרים ביותר.
+  const quotaYoung = teams.map(() => 1);
+  // צוותים עם need>=2 יכולים לקבל יותר מבוגר אחד; צוותים שצריכים 3+
+  // חברים מקבלים עדיין רק "צעיר" אחד — ההגדרה היא: ראש הקבוצה (1 הצעיר
+  // ביותר שעדיין פנוי) מול שאר החברים (בוגרים). זה תואם את ההתנהגות
+  // הקודמת, שבה חבר שלישי ואילך הצטרפו מצד "הבוגרים" של הרשימה.
+  const sizeOfYoungHalf = count;                 // אחד לכל צוות
+  const sizeOfOldHalf = sorted.length - sizeOfYoungHalf;
+  const youngPool = sorted.slice(0, sizeOfYoungHalf);      // הצעירים ביותר, אחד לכל צוות
+  const oldPool   = sorted.slice(sizeOfYoungHalf);         // כל השאר — "הבוגרים"
+
+  // פרמוטציה של אינדקסי הצוותים לזיווג הצעיר→צוות: אקראית כברירת מחדל,
+  // זהותית (0,1,2,...) במצב shuffle:false לשחזור ההתנהגות הישנה.
+  const perm = [];
+  for (let i = 0; i < count; i++) perm.push(i);
+  if (doShuffle){
+    for (let i = perm.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = perm[i]; perm[i] = perm[j]; perm[j] = t;
     }
   }
-  if (lo === hi){
-    const t = findWithCapacity(0, 1);
-    teams[t].members.push(sorted[lo]);
+  // כל צוות מקבל צעיר אחד, לפי הפרמוטציה (אקראית או זהותית)
+  for (let i = 0; i < count; i++){
+    teams[perm[i]].members.push(youngPool[i]);
+    need[perm[i]] -= 1;
   }
+
+  // כעת ממלאים את שאר הצרכים מתוך מאגר הבוגרים. גם כאן — אקראי כברירת
+  // מחדל, זהותי (מהקצה הישן, מהבוגר ביותר פנימה) במצב shuffle:false.
+  let oldOrder = oldPool.slice();
+  if (doShuffle) oldOrder = shuffle(oldOrder);
+  else oldOrder = oldOrder.slice().reverse();   // בוגר ביותר קודם — כמו קודם
+
+  let oi = 0;
+  for (let t = 0; t < count; t++){
+    while (need[t] > 0){
+      teams[t].members.push(oldOrder[oi++]);
+      need[t] -= 1;
+    }
+  }
+
   // ממיינים כל צוות מצעיר לבוגר
   teams.forEach(t => t.members.sort((a,b) => a.age - b.age));
   return teams;
@@ -770,16 +1327,16 @@ KESHER.CARDS = [
 ];
 
 KESHER.CARD_META = {
-  1: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
-  2: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
-  3: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
-  4: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
-  5: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'evergreen'},
-  6: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
-  7: {roles:'young-asks',audience:'watch', scoring:null,  secret:false, minYoungAge:10, durationSec:0,  replayPolicy:'discovery'},
-  8: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
-  9: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
-  10:{roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'evergreen'},
+  1: {roles:'together',  audience:'watch', scoring:'story',  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  2: {roles:'together',  audience:'watch', scoring:'story',  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  3: {roles:'together',  audience:'watch', scoring:'story',  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  4: {roles:'together',  audience:'watch', scoring:'story',  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  5: {roles:'together',  audience:'watch', scoring:'story',  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'evergreen'},
+  6: {roles:'together',  audience:'watch', scoring:'story',  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  7: {roles:'young-asks',audience:'watch', scoring:'story',  secret:false, minYoungAge:10, durationSec:0,  replayPolicy:'discovery'},
+  8: {roles:'together',  audience:'watch', scoring:'story',  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  9: {roles:'together',  audience:'watch', scoring:'story',  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  10:{roles:'together',  audience:'watch', scoring:'story',  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'evergreen'},
 
   11:{roles:'young-acts',audience:'guess', scoring:'guess', secret:true,  minYoungAge:8,  durationSec:60, replayPolicy:'evergreen'},
   12:{roles:'older-acts',audience:'guess', scoring:'guess', secret:false, minYoungAge:8,  durationSec:45, replayPolicy:'evergreen'},
@@ -816,8 +1373,10 @@ KESHER.CARD_META = {
 };
 
 /* --- חלק 4א: בניית סבב --------------------------------------------------
-   שתי דרישות מתנגשות: גיוון תוכן מול הוגנות ניקוד. הניקוד מנצח — צוות
-   שקיבל שלושה קלפי זיכרון ברצף מפסיד בלי קשר לביצועיו.
+   כל קלף מנקד (ראו CARD_META — אין יותר ערך scoring:null), ולכן 'תורות
+   מתחלקים שווה' ו'הזדמנויות ניקוד שוות' הם אותו דבר בדיוק: מונה עומס
+   אחד מספיק, במקום השניים (turnsOf/scoringOf) ושני מעברי deal שהיו
+   דרושים כשחלק מהקלפים לא ניקדו.
 
    תיקון לעומת הדוגמה בבריף: הדוגמה מחלקת עם אינדקס מחזורי i שמתעדכן
    בתוך הלולאה (i = i + k + 1) — כשצוות נדלג עליו מסיבת גיל, הקפיצה
@@ -827,16 +1386,21 @@ KESHER.CARD_META = {
    שסותר את 'גודל הסבב' וגם מקטין בשקט את מספר קלפי הניקוד.
 
    הפתרון: שיבוץ גרידי לפי עומס — בכל קלף בוחרים את הצוות הזמין (עומד
-   בתנאי הגיל) עם הכי מעט תורות שהוקצו לו כבר (שובר שוויון: הכי מעט
-   קלפי ניקוד, אחר כך סדר אקראי). זה מבטיח הפרש ±1 תמיד, בלי תלות
-   במספר הדילוגים.
+   בתנאי הגיל) עם הכי מעט תורות שהוקצו לו כבר (שובר שוויון: סדר אקראי).
+   זה מבטיח הפרש ±1 תמיד, בלי תלות במספר הדילוגים.
 
    קלף שאף צוות לא עומד בתנאי הגיל שלו (minYoungAge גבוה מהצעיר בכל
    צוות) לא מוקצה לאף אחד — הוא מסונן מהמאגר *לפני* הבחירה, כפי שדורש
    המפרט: "המנוע מדלג על קלף כזה... ושולף אחר במקומו". כך הקצאה
    לכל-מי-שנבחר תמיד כשירה, ואין צורך בנתיב גיבוי שמכניס קלף לצוות לא
    מתאים. אם אחרי הסינון נשארו פחות קלפים מ-size, מוחזר סבב קצר יותר —
-   סבב קצר הוא כן; קלף לא מתאים הוא לא. */
+   סבב קצר הוא כן; קלף לא מתאים הוא לא.
+
+   עדיפות קלפים "אוניברסליים": קלף עם minYoungAge גבוה מהצעיר של *חלק*
+   מהצוותים (אך לא כולם) כשיר רק לתת-קבוצה — וכיוון שכל קלף מנקד, אותה
+   תת-קבוצה הייתה צוברת הזדמנויות ניקוד נוספות בלי קשר לביצועים. לכן
+   מעדיפים למלא את הסבב מתוך קלפים "אוניברסליים" (minYoungAge שעומד בו
+   *כל* צוות) ופונים לקלפים "מוגבלים" רק כשהמאגר האוניברסלי לא מספיק. */
 function shuffle(a){
   const r = a.slice();
   for (let i = r.length - 1; i > 0; i--){
@@ -861,161 +1425,237 @@ KESHER.buildRound = function(teams, size, cardStatus){
     return true;
   });
 
-  // --- תיקון הוגנות: לא כל מי ש"כשיר" כשיר באותה מידה. קלף עם minYoungAge
-  // גבוה מהצעיר של *חלק* מהצוותים (אך לא כולם) כשיר רק לתת-קבוצה — וכשרוב
-  // הקלפים האלה מנקדים, אותה תת-קבוצה צוברת הזדמנויות ניקוד נוספות בלי
-  // קשר לביצועים. לכן מעדיפים למלא את הסבב מתוך קלפים "אוניברסליים"
-  // (minYoungAge שעומד בו *כל* צוות) ופונים לקלפים "מוגבלים" רק כשהמאגר
-  // האוניברסלי לא מספיק. מתוך המוגבלים, מעדיפים קלפים שאינם מנקדים —
-  // כך חוסר האיזון שלא ניתן למנוע נופל על תורות ולא על נקודות.
+  // עדיפות לקלפים אוניברסליים (ראו הערה למעלה) — מוגבלים רק משלימים.
   const minYoungest = Math.min(...teams.map(t => youngestOf[t.id]));
   const isUniversal = c => KESHER.CARD_META[c.id].minYoungAge <= minYoungest;
 
-  const universal = available.filter(isUniversal);
-  const restricted = available.filter(c => !isUniversal(c));
+  const universal  = shuffle(available.filter(isUniversal));
+  const restricted = shuffle(available.filter(c => !isUniversal(c)));
 
-  const universalScoring  = shuffle(universal.filter(c => KESHER.CARD_META[c.id].scoring));
-  const universalPlain    = shuffle(universal.filter(c => !KESHER.CARD_META[c.id].scoring));
-  // בתוך המוגבלים: קלפים לא-מנקדים קודם (כך שאם צריך למלא עם מוגבלים,
-  // עדיפות לא-מנקד כדי שחוסר האיזון יפול על תורות ולא על נקודות).
-  const restrictedPlain   = shuffle(restricted.filter(c => !KESHER.CARD_META[c.id].scoring));
-  const restrictedScoring = shuffle(restricted.filter(c => KESHER.CARD_META[c.id].scoring));
-
-  // כמה מנקדים בסך הכול: שני שלישים מהסבב, אבל לא יותר מהזמין (אוניברסלי+מוגבל)
-  const totalScoringAvail = universalScoring.length + restrictedScoring.length;
-  const totalPlainAvail   = universalPlain.length + restrictedPlain.length;
-  const wantScoring = Math.min(totalScoringAvail, Math.round(size * 0.65));
-  const wantPlain   = Math.min(totalPlainAvail, size - wantScoring);
-
-  // מילוי מנקדים: קודם אוניברסליים, מוגבלים רק אם המאגר האוניברסלי לא מספיק.
-  const pickedScoring = universalScoring.slice(0, wantScoring)
-    .concat(restrictedScoring.slice(0, Math.max(0, wantScoring - universalScoring.length)));
-  // מילוי לא-מנקדים: קודם מוגבלים (לנצל אותם כשאינם פוגעים בניקוד),
-  // ואז אוניברסליים להשלמת הכמות — כך קלפי minYoungAge גבוה שאינם מנקדים
-  // "נספגים" בלי להטות את הניקוד, והאוניברסליים שנשארו פנויים לניקוד בעתיד.
-  const pickedPlain = restrictedPlain.slice(0, wantPlain)
-    .concat(universalPlain.slice(0, Math.max(0, wantPlain - restrictedPlain.length)));
-
-  const picked = pickedScoring.concat(pickedPlain);
+  const picked = universal.concat(restricted).slice(0, size);
   const turns = [];
 
-  // מעקב עומס לכל צוות: סך תורות, וסך קלפי ניקוד — שני המונים נשמרים
-  // ביחד כדי שגם 'תורות מתחלקים שווה' וגם 'הזדמנויות ניקוד שוות' יתקיימו.
-  const turnsOf = {}, scoringOf = {};
-  teams.forEach(t => { turnsOf[t.id] = 0; scoringOf[t.id] = 0; });
+  // מעקב עומס לכל צוות: סך תורות — מונה יחיד, כי כל קלף מנקד ולכן
+  // 'תורות' ו'הזדמנויות ניקוד' הם אותו מספר בדיוק.
+  const turnsOf = {};
+  teams.forEach(t => { turnsOf[t.id] = 0; });
 
-  function deal(cards, isScoring){
-    for (const c of cards){
-      const m = KESHER.CARD_META[c.id];
-      // תמיד יש לפחות צוות כשיר אחד — הקלף סונן מהמאגר אחרת.
-      const eligible = teams.filter(t => youngestOf[t.id] >= m.minYoungAge);
-      // בוחרים מתוך הכשירים את הצוות עם הכי פחות עומס רלוונטי
-      // (שובר שוויון: הכי פחות תורות בסך הכול).
-      let best = eligible[0];
-      for (const t of eligible){
-        const tBusy = isScoring ? scoringOf[t.id] : turnsOf[t.id];
-        const bBusy = isScoring ? scoringOf[best.id] : turnsOf[best.id];
-        if (tBusy < bBusy || (tBusy === bBusy && turnsOf[t.id] < turnsOf[best.id])){
-          best = t;
-        }
-      }
-      turns.push({ cardId:c.id, teamId:best.id });
-      turnsOf[best.id]++;
-      if (isScoring) scoringOf[best.id]++;
+  for (const c of picked){
+    const m = KESHER.CARD_META[c.id];
+    // תמיד יש לפחות צוות כשיר אחד — הקלף סונן מהמאגר אחרת.
+    const eligible = teams.filter(t => youngestOf[t.id] >= m.minYoungAge);
+    // בוחרים מתוך הכשירים את הצוות עם הכי פחות תורות בסך הכול.
+    let best = eligible[0];
+    for (const t of eligible){
+      if (turnsOf[t.id] < turnsOf[best.id]) best = t;
     }
+    turns.push({ cardId:c.id, teamId:best.id });
+    turnsOf[best.id]++;
   }
-  deal(picked.filter(c => KESHER.CARD_META[c.id].scoring), true);
-  deal(picked.filter(c => !KESHER.CARD_META[c.id].scoring), false);
 
   return shuffle(turns).slice(0, size);
 };
 
-/* --- חלק 3: עלילת רקע — מגילת אנטיוכוס ---------------------------------
-   טקסט אמיתי. נקרא עד היום בבתי כנסת בנוסח תימן בשבת חנוכה.
-   הניסוח לילדים הוא שלנו; העלילה נאמנה למגילה.
-   אסור להציג אותה כהיסטוריה — יש בה שיבושים מוכרים, והתיארוך שנוי במחלוקת. */
+/* --- חלק 3: המגילה — נקודה אחת, שורה אחת ------------------------------
+   העלילה היא של מגילת אנטיוכוס, מגילה ארמית אמיתית על סיפור חנוכה.
+   הקול — ילד בן תשע שצופה מהפתח — הוא המצאה שלנו, מכשיר מסירה בלבד.
+   מותר לנו להמציא מה הוא רואה, מריח ושומע; אסור להמציא אירועים,
+   דמויות או נסים שאינם במגילה. אסור להציג את הטקסט כציטוט ממנה:
+   זו מסירה מחדש, והערות ה-source הן שעוגנות אותה במקור האמיתי.
+   התיארוך שנוי במחלוקת ויש במגילה שיבושים מוכרים — ולכן "בת אלף שנה
+   לפחות", ולא יותר מזה.
+   ---------------------------------------------------------------------
+   מבנה: lines — שורה אחת לכל נקודה משפחתית. scenes — ריצוף רצוף של
+   השורות (from/to הם אינדקסים כוללניים ב-lines, מאופס מאפס). ------- */
 KESHER.STORY = {
   id: 'megillat-antiochus',
-  title: 'המגילה שנשכחה',
+  title: 'המגילה שנמצאה',
   source: 'מגילת אנטיוכוס — מגילה ארמית עתיקה על סיפור חנוכה',
-  note: 'מגילה עתיקה בת אלף שנה לפחות. נקראת עד היום בבתי כנסת בנוסח תימן ' +
-        'בשבת חנוכה, ומופיעה כנספח בחלק מהסידורים. אינה ספר היסטוריה — ' +
-        'יש בה פרטים שאינם מתיישבים עם ספר מקבים, וזה חלק מהעניין.',
-  segments: [
-    { n:1, threshold:0, title:'הגזרות',
-      text:'אנטיוכוס, מלך יוון, שלח את שר צבאו ניקנור אל ירושלים. הוא אמר על ' +
-           'היהודים: העם הזה שומר שבת וראש חודש ומילה, ומחכה למלך שימלוך על כל הארצות.',
-      forAdults:'המגילה פותחת דווקא בשלוש המצוות האלה — שבת, ראש חודש ומילה. ' +
-                'אלה בדיוק הגזרות שספר מקבים מתאר.' },
+  note: 'מגילה עתיקה בת אלף שנה לפחות. נקראת עד היום בבתי כנסת בנוסח ' +
+        'תימן בשבת חנוכה, ומופיעה כנספח בחלק מהסידורים. אינה ספר ' +
+        'היסטוריה: יש בה פרטים שאינם מתיישבים עם ספר מקבים. אנחנו ' +
+        'מספרים אותה כאן מחדש, במילים שלנו, מהעיניים של ילד שהיה שם.',
 
-    { n:2, threshold:3, title:'החזיר במקדש',
-      text:'ניקנור הגיע לירושלים, בנה מזבח בבית המקדש, ושחט עליו חזיר. ' +
-           'את דמו הוא הביא אל תוך קודש הקודשים.',
-      forAdults:'זו נקודת האל-חזור של הסיפור: לא רק גזרה על העם, אלא חילול ' +
-                'המקום עצמו.' },
+  scenes: [
+    { n:1,  title:'הצנצנת',             from:0,  to:4  },
+    { n:2,  title:'הלחש ברחוב',         from:5,  to:11 },
+    { n:3,  title:'מה שעשו במקדש',      from:12, to:17 },
+    { n:4,  title:'החרב מתחת לגלימה',   from:18, to:23 },
+    { n:5,  title:'הפגישה',             from:24, to:30 },
+    { n:6,  title:'המצבה ששמה מקבי',    from:31, to:35 },
+    { n:7,  title:'המערה',              from:36, to:42 },
+    { n:8,  title:'חמש הברכות',         from:43, to:49 },
+    { n:9,  title:'הפילים',             from:50, to:56 },
+    { n:10, title:'אלעזר',              from:57, to:64 },
+    { n:11, title:'הפך',                from:65, to:70 },
+    { n:12, title:'סוף המגילה',         from:71, to:73 }
+  ],
 
-    { n:3, threshold:7, title:'החרב תחת הגלימה',
-      text:'יוחנן בן מתתיהו, הכהן הגדול, שמע מה קרה. הוא החביא חרב קצרה מתחת ' +
-           'לבגדיו וביקש להיפגש עם ניקנור.',
-      forAdults:'שימו לב מי הגיבור כאן — יוחנן, ולא יהודה המכבי. במגילה הזו ' +
-                'יהודה כמעט אינו מופיע בתחילת הסיפור.' },
+  lines: [
+    /* --- סצנה 1: הצנצנת --- */
+    { n:1,  text:'בחורף מצאו צנצנת חרס במחסן של בית כנסת ישן.' },
+    { n:2,  text:'הפה שלה היה סתום בשעווה, והשעווה הייתה קשה כמו אבן.' },
+    { n:3,  text:'בפנים הייתה מגילה מגולגלת, צפודה, שאף אחד לא פתח המון זמן.',
+      source:'מגילת אנטיוכוס עצמה שרדה בכתבי יד ובסידורים, לא בצנצנת. ' +
+             'הצנצנת כאן היא דרך לספר, לא תגלית.' },
+    { n:4,  text:'קוראים לה מגילת אנטיוכוס, והיא מספרת מה קרה בחנוכה.',
+      source:'מגילה עתיקה בת אלף שנה לפחות, במקור בארמית. התיארוך שלה ' +
+             'שנוי במחלוקת בין חוקרים.' },
+    { n:5,  text:'נספר אותה כאן מחדש, במילים שלנו, מהעיניים של ילד שהיה שם.' },
 
-    { n:4, threshold:12, title:'הפגישה',
-      text:'ניקנור דרש מיוחנן להקריב חזיר ולקבל בתמורה כבוד מלכות. יוחנן העמיד ' +
-           'פנים שהוא מסכים, וביקש שיפנו את החדר מאנשים — ואז הרג אותו.',
-      forAdults:'תחבולה, לא קרב גלוי. המגילה אינה מתביישת בזה.' },
+    /* --- סצנה 2: הלחש ברחוב --- */
+    { n:6,  text:'אבא אמר לי לא לצאת מהבית.' },
+    { n:7,  text:'יצאתי.' },
+    { n:8,  text:'ברחוב כולם דיברו בלחש, וזה מוזר, כי ברחוב שלנו לא מדברים בלחש.' },
+    { n:9,  text:'אמרו שהמלך אנטיוכוס שלח לכאן את שר הצבא שלו, ניקנור.' },
+    { n:10, text:'אמרו שאסור יהיה לשמור שבת, ואסור ראש חודש, ואסור למול.',
+      source:'המגילה פותחת בדיוק בשלוש המצוות האלה — שבת, ראש חודש ומילה. ' +
+             'אותן גזרות מופיעות גם בספר מקבים.' },
+    { n:11, text:'שאלתי את אמא מה זה אומר. היא אמרה לי לך לשחק בחוץ.' },
+    { n:12, text:'היא לא אמרה לי לך לשחק בחוץ מאז שהייתי בן שש.' },
 
-    { n:5, threshold:18, title:'המצבה ששמה מקבי',
-      text:'יוחנן יצא לקרב ונלחם. אחר כך הוא בנה מצבה וקרא לה "מקבי" — ' +
-           'כלומר, ממית החזקים.',
-      forAdults:'כאן המגילה נותנת את המקור לשם "מכבי". זה הסבר שהמגילה מציעה; ' +
-                'יש חוקרים שמציעים הסברים אחרים לגמרי.' },
+    /* --- סצנה 3: מה שעשו במקדש --- */
+    { n:13, text:'אחר כך הם עלו להר.' },
+    { n:14, text:'בנו שם מזבח חדש, שלא היה שם קודם.' },
+    { n:15, text:'והביאו חזיר.' },
+    { n:16, text:'לא אספר מה עשו לו. עד הערב כל העיר ידעה.' },
+    { n:17, text:'את הדם הכניסו לקודש הקודשים, לחדר שרק הכוהן הגדול נכנס אליו.',
+      source:'זו נקודת האל-חזור במגילה: לא רק גזרה על אנשים, אלא חילול ' +
+             'המקום עצמו.' },
+    { n:18, text:'סבתא שלי התיישבה על הרצפה ולא קמה עד למחרת בבוקר.' },
 
-    { n:6, threshold:25, title:'המערה',
-      text:'שר יווני בשם בגריס גזר גזרות חדשות. יהודים הסתתרו במערה כדי לשמור ' +
-           'שבת בשקט. הוא דרש שייצאו, והם סירבו — כי זו שבת. הם לא יצאו, ולא שרדו.',
-      forAdults:'ספר מקבים מספר את אותו סיפור, ומוסיף את מה שקרה אחריו: ' +
-                'מתתיהו וחבריו החליטו שמעתה נילחם גם בשבת. זהו המקור לדין ' +
-                'פיקוח נפש במלחמה.' },
+    /* --- סצנה 4: החרב מתחת לגלימה --- */
+    { n:19, text:'לכוהן הגדול שלנו קוראים יוחנן בן מתתיהו.',
+      source:'שימו לב מי הגיבור במגילה הזו: יוחנן, ולא יהודה המקבי. ' +
+             'בספר מקבים הגיבור הוא יהודה.' },
+    { n:20, text:'ראיתי אותו פעם אחת מרחוק, והוא נראה כמו כל אדם.' },
+    { n:21, text:'באותו לילה הוא בא לבית של דוד שלי, ונכנסו לחדר הפנימי.' },
+    { n:22, text:'עמדתי מחוץ לדלת. אסור היה לי. עמדתי.' },
+    { n:23, text:'שמעתי אותו אומר: אני אבקש להיפגש איתו לבד.' },
+    { n:24, text:'למחרת ראיתי שמתחת לגלימה שלו יש חרב קצרה.',
+      source:'במגילה יוחנן מחביא חרב קצרה מתחת לבגדיו לפני הפגישה.' },
 
-    { n:7, threshold:33, title:'הברכות',
-      text:'חמשת בני מתתיהו יצאו לקרב. אביהם בירך כל אחד מהם, והשווה אותו ' +
-           'לגיבור מן התנ"ך: את יהודה ליהודה בן יעקב, את שמעון לשמעון, ' +
-           'את יוחנן לאבנר, את יונתן ליונתן בן שאול, ואת אלעזר לפינחס.',
-      forAdults:'כל ברכה היא רמז לסיפור מקראי אחר. שווה לבדוק בבית למה דווקא ' +
-                'ההשוואות האלה.' },
+    /* --- סצנה 5: הפגישה --- */
+    { n:25, text:'יוחנן הלך אל ניקנור לבד.' },
+    { n:26, text:'ניקנור אמר לו: תקריב חזיר, ותקבל בגדי מלכות וכבוד.' },
+    { n:27, text:'יוחנן אמר שהוא מסכים.' },
+    { n:28, text:'אני לא הבנתי איך הוא מסכים.' },
+    { n:29, text:'ואז הוא אמר: אני מתבייש מהאנשים שעומדים כאן. שיצאו.' },
+    { n:30, text:'כולם יצאו.' },
+    { n:31, text:'יוחנן הוציא את החרב, וניקנור לא יצא משם.',
+      source:'תחבולה, לא קרב גלוי. המגילה אינה מתביישת בזה ומספרת את זה ' +
+             'בפירוט.' },
 
-    { n:8, threshold:42, title:'מצפה גלעד',
-      text:'בגריס חזר, והפעם הביא איתו פילי מלחמה. האחים הלכו למצפה גלעד, ' +
-           'גזרו תענית, ישבו על האפר והתפללו לפני הקרב.',
-      forAdults:'פילי מלחמה היו הטנקים של התקופה. הצבא הסלאוקי אכן השתמש בהם.' },
+    /* --- סצנה 6: המצבה ששמה מקבי --- */
+    { n:32, text:'אחרי זה היו קרבות ברחובות, ואנחנו היינו במרתף.' },
+    { n:33, text:'כשיצאנו, ראיתי שיוחנן בנה מצבה מאבנים בכניסה לשוק.' },
+    { n:34, text:'היה חרוט עליה שם. שאלתי מה כתוב.' },
+    { n:35, text:'אמרו לי: מקבי. זה אומר ממית החזקים.',
+      source:'כאן המגילה נותנת את המקור לשם "מקבי" — ממית החזקים. זה ההסבר ' +
+             'שהמגילה מציעה; לחוקרים יש הסברים אחרים לגמרי.' },
+    { n:36, text:'חזרתי הביתה ואמרתי את המילה הזאת בלחש כל הדרך.' },
 
-    { n:9, threshold:52, title:'אלעזר והפיל',
-      text:'בקרב נפל יהודה. אלעזר ראה פיל גדול מכל השאר, רץ בין חיילי האויב, ' +
-           'הגיע עד הפיל, כרע תחתיו ודקר אותו. הפיל נפל עליו. אחיו חיפשו אותו ' +
-           'בין החיים ובין המתים עד שמצאו אותו.',
-      forAdults:'שתי הפתעות: ראשית, במגילה הזו יהודה נהרג — הפוך מספר מקבים, ' +
-                'שבו מתתיהו מת ראשון. שנית, הנוסח הארמי אומר שאלעזר טבע ' +
-                'בגללי הפיל. זה כתוב שם ממש.' },
+    /* --- סצנה 7: המערה --- */
+    { n:37, text:'אחרי יוחנן בא שר אחר, בגריס, והגזרות חזרו.' },
+    { n:38, text:'אנשים בשכונה שלנו הפסיקו להגיד שלום בקול.' },
+    { n:39, text:'כמה מהם הלכו למערה מחוץ לעיר, כדי לשמור שבת בשקט.' },
+    { n:40, text:'בגריס מצא אותם. הוא עמד בפתח וקרא להם לצאת.' },
+    { n:41, text:'הם אמרו: היום שבת.' },
+    { n:42, text:'הם לא יצאו, ולא חזרו.',
+      source:'ספר מקבים מספר את אותו סיפור ומוסיף מה קרה אחריו: מתתיהו ' +
+             'וחבריו החליטו שמעתה נילחם גם בשבת. זהו שורש דין פיקוח נפש.' },
+    { n:43, text:'אבא לא דיבר כמעט כל אותו שבוע.' },
 
-    { n:10, threshold:62, title:'פך השמן',
-      text:'כשחזרו וטיהרו את המקדש, מצאו פך שמן אחד שעדיין היה חתום בחותם ' +
-           'הכהן הגדול. היה בו שמן ליום אחד בלבד — והוא דלק שמונה ימים. ' +
-           'מאז קבעו שמונה ימי חג.',
-      forAdults:'נס פך השמן אינו מופיע בספר מקבים כלל. המקור הקדום ביותר לחנוכה, ' +
-                'מגילת תענית, הוא משפט אחד — ואין בו שמן. הסיפור מופיע ' +
-                'בתלמוד, שבת כ"א ע"ב.' }
+    /* --- סצנה 8: חמש הברכות --- */
+    { n:44, text:'למתתיהו היו חמישה בנים, וכולם יצאו לקרב.' },
+    { n:45, text:'הוא בירך אותם אחד-אחד בחצר, ואני ישבתי על הגדר.' },
+    { n:46, text:'ליהודה הוא אמר שהוא כמו יהודה בן יעקב.' },
+    { n:47, text:'לשמעון הוא אמר שהוא כמו שמעון בן יעקב.' },
+    { n:48, text:'ליוחנן הוא אמר שהוא כמו אבנר שר הצבא.' },
+    { n:49, text:'ליונתן הוא אמר שהוא כמו יונתן בן שאול.' },
+    { n:50, text:'ולאלעזר הוא אמר שהוא כמו פינחס.',
+      source:'כל ברכה היא רמז לסיפור מקראי אחר — שווה לבדוק בבית למה דווקא ' +
+             'ההשוואות האלה, ובמיוחד פינחס לאלעזר.' },
+
+    /* --- סצנה 9: הפילים --- */
+    { n:51, text:'בגריס חזר, והפעם הביא איתו פילים.',
+      source:'פילי מלחמה היו הטנקים של התקופה, והצבא הסלאוקי אכן השתמש בהם.' },
+    { n:52, text:'לא ראיתי פיל לפני זה. חשבתי שזה סיפור.' },
+    { n:53, text:'זה לא סיפור. רואים אותם מרחוק ומרגישים אותם באדמה.' },
+    { n:54, text:'האחים הלכו למצפה גלעד לפני הקרב.' },
+    { n:55, text:'לא אכלו כל היום.' },
+    { n:56, text:'ישבו על אפר והתפללו, וזה לא נראה בכלל כמו צבא.' },
+    { n:57, text:'רצתי אחריהם חצי הדרך, עד שהעיפו אותי חזרה.' },
+
+    /* --- סצנה 10: אלעזר --- */
+    { n:58, text:'בקרב הזה נפל יהודה.',
+      source:'הפתעה: במגילה הזו יהודה נהרג בקרב. בספר מקבים מתתיהו הוא ' +
+             'שמת ראשון, והסדר הפוך.' },
+    { n:59, text:'אמרו לי את זה בשתי מילים, וזה היה כל מה שאמרו.' },
+    { n:60, text:'אלעזר ראה פיל אחד שהיה גדול מכל השאר.' },
+    { n:61, text:'הוא רץ בין החיילים, ואף אחד לא הצליח לעצור אותו.' },
+    { n:62, text:'הוא נכנס מתחת לפיל ודקר אותו מלמטה.' },
+    { n:63, text:'הפיל נפל, ואלעזר נשאר מתחתיו.' },
+    { n:64, text:'במגילה כתוב שהוא טבע בגללי הפיל. ככה בדיוק כתוב שם.',
+      source:'זה באמת מופיע בנוסח הארמי של המגילה, מילה במילה. לא ריככנו ' +
+             'ולא המצאנו.' },
+    { n:65, text:'האחים חיפשו אותו בין החיים ובין המתים, עד שמצאו אותו.' },
+
+    /* --- סצנה 11: הפך --- */
+    { n:66, text:'אחר כך עלינו להר, והם טיהרו את המקדש.' },
+    { n:67, text:'חיפשו שמן, וכל הפכים היו פתוחים או שבורים.' },
+    { n:68, text:'מצאו פך אחד שהחותם של הכוהן הגדול עוד היה עליו.',
+      source:'פך אחד, חתום. במגילה זה הפרט שמסביר למה שמונה ימים ולא שבעה ' +
+             'או עשרה.' },
+    { n:69, text:'היה בו שמן ליום אחד.' },
+    { n:70, text:'הוא דלק שמונה ימים.',
+      source:'נס פך השמן אינו מופיע בספר מקבים כלל. המקור הקדום לחנוכה, ' +
+             'מגילת תענית, הוא משפט אחד ואין בו שמן. הנס מופיע בתלמוד, ' +
+             'שבת כ"א ע"ב.' },
+    { n:71, text:'עליתי לשם כל יום לבדוק, ובכל יום זה עוד דלק.' },
+
+    /* --- סצנה 12: סוף המגילה --- */
+    { n:72, text:'כאן המגילה נגמרת, ולא כתוב בה מה קרה לילד אחר כך.' },
+    { n:73, text:'בבתי כנסת בנוסח תימן קוראים אותה עד היום, בשבת של חנוכה.',
+      source:'קהילות תימן קוראות את מגילת אנטיוכוס בשבת חנוכה, בארמית ' +
+             'ובתרגום. בשאר הקהילות היא כמעט לא מוכרת.' },
+    { n:74, text:'ובחלק מהסידורים אפשר למצוא אותה מודפסת בסוף, כנספח.' }
   ]
 };
 
-KESHER.unlockedSegments = function(familyScore){
-  return KESHER.STORY.segments.filter(s => familyScore >= s.threshold);
+/* שלוש פונקציות המגילה. גנריות לחלוטין: אינן מכירות את הסיפור הספציפי
+   ואינן מניחות עליו דבר מלבד המבנה lines/scenes. חבילת סיפור אחרת
+   נכנסת בהחלפת KESHER.STORY בלבד. */
+KESHER.revealedLines = function(points){
+  const lines = (KESHER.STORY && KESHER.STORY.lines) || [];
+  const n = Math.max(0, Math.min(lines.length, Math.floor(Number(points) || 0)));
+  return lines.slice(0, n);
+};
+
+KESHER.sceneFor = function(points){
+  const story = KESHER.STORY || {};
+  const lines = story.lines || [], scenes = story.scenes || [];
+  const n = Math.max(0, Math.min(lines.length, Math.floor(Number(points) || 0)));
+  if (n === 0) return null;
+  const idx = n - 1;   // האינדקס של השורה האחרונה שנחשפה
+  return scenes.find(s => idx >= s.from && idx <= s.to) || null;
+};
+
+KESHER.storyProgress = function(points){
+  const total = ((KESHER.STORY && KESHER.STORY.lines) || []).length;
+  const revealed = KESHER.revealedLines(points).length;
+  return {
+    revealed: revealed,
+    total: total,
+    scene: KESHER.sceneFor(points),
+    isComplete: total > 0 && revealed >= total
+  };
 };
 
 /* =======================================================================
    חלק 5: הממשק
    מכאן והלאה — צרכן בלבד. אין נגיעה ב-formTeams / DECKS / CARDS /
-   CARD_META / buildRound / STORY / unlockedSegments.
+   CARD_META / buildRound / STORY / revealedLines / sceneFor / storyProgress.
    הקוד כאן אינו רץ בסביבת הבדיקות: boot() נקרא רק כשיש DOM אמיתי
    (ראו הסוף), ולכן אפשר להריץ את כל הסקריפט ב-vm בלי תופעות לוואי.
    ======================================================================= */
@@ -1045,13 +1685,16 @@ let S = {
   cardStatus: {},    // {[id]:'done'}
   starred: [],       // [{cardId, deck, team}]
   familyScore: 0,    // סכום נקודות כל הצוותים, מצטבר בין ערבים — זה מניע את המגילה
-  shownSegments: [], // מספרי קטעים שכבר הוצגו, כדי לא להציג פעמיים
+  shownScenes: [],   // מספרי סצנות שחגיגת ההשלמה שלהן כבר הוצגה
+  introSeen: false,  // רצף הפתיחה כבר רץ פעם אחת — לא מוקרן שוב מעצמו
   round: null        // {turns:[{cardId,teamId}], idx, size}
 };
 
 // מצב רגעי שאינו נשמר. secretShown מתאפס בכוונה בכל טעינה:
 // אחרי רענון הקלף הסודי חוזר להיות מוסתר.
-const UI = { secretShown:false, segQueue:[], timer:null, timerLeft:0, timerTotal:0, timerEnd:0, audio:null };
+// painted הוא מספר השורות שכבר יושבות ברשימה שבצד — רק מה שמעליו מונפש.
+const UI = { secretShown:false, sceneQueue:[], painted:0, timer:null,
+             timerLeft:0, timerTotal:0, timerEnd:0, audio:null, introTimer:null };
 
 /* --- שמירה ושחזור ------------------------------------------------------
    מפתח אחד בלבד: STORAGE_KEY. כל כתיבה עוברת דרך save(). */
@@ -1085,9 +1728,57 @@ function load(){
   S.cardStatus   = (d.cardStatus && typeof d.cardStatus === 'object') ? d.cardStatus : {};
   S.starred      = Array.isArray(d.starred) ? d.starred.filter(s => s && KESHER.CARD_META[s.cardId]) : [];
   S.familyScore  = (typeof d.familyScore === 'number' && d.familyScore >= 0) ? Math.floor(d.familyScore) : 0;
-  S.shownSegments= Array.isArray(d.shownSegments) ? d.shownSegments.filter(n => typeof n === 'number') : [];
+  // שמירה מהמודל הקודם (קטעים לפי ספים) לא מכילה shownScenes. במקרה כזה
+  // מסמנים כמוצגות את כל הסצנות שהניקוד הקיים כבר השלים, אחרת ערב ראשון
+  // אחרי העדכון היה נפתח בשרשרת חגיגות על סצנות שהמשפחה כבר עברה.
+  S.shownScenes  = Array.isArray(d.shownScenes)
+    ? d.shownScenes.filter(n => typeof n === 'number')
+    : KESHER.STORY.scenes.filter(s => S.familyScore >= s.to + 1).map(s => s.n);
+  S.introSeen    = d.introSeen === true;
   S.round        = validRound(d.round) ? d.round : null;
   if (S.round && !S.teams.length) S.round = null;
+}
+
+/* --- רצף הפתיחה -------------------------------------------------------
+   8.4 שניות של SVG + CSS. רץ אוטומטית פעם אחת בלבד בחיי המכשיר (הדגל
+   S.introSeen נשמר יחד עם שאר המצב, במפתח האחסון היחיד), ואחר כך רק
+   בלחיצה מהתפריט. הדילוג זמין מהרגע הראשון, וגם Escape עוצר.
+   עם prefers-reduced-motion אין תנועה בכלל: פריים נייח, ומסירה קצרה. */
+const INTRO_MS = 8800;
+const INTRO_STILL_MS = 2600;
+
+function prefersReducedMotion(){
+  return typeof window.matchMedia === 'function' &&
+         !!window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+}
+
+function playIntro(){
+  const box = el('intro');
+  if (!box) return;
+  stopTimer();
+  if (UI.introTimer){ clearTimeout(UI.introTimer); UI.introTimer = null; }
+  box.hidden = false;
+  box.classList.remove('go');
+  void box.offsetWidth;            // מאלץ התחלה מחדש בהקרנה חוזרת
+  box.classList.add('go');
+  UI.introTimer = setTimeout(endIntro, prefersReducedMotion() ? INTRO_STILL_MS : INTRO_MS);
+  const skip = el('intro-skip');
+  if (skip && skip.focus) skip.focus();
+}
+
+// מסירה למסך שמתחת. הרצף תמיד יושב מעל מסך קיים, ולכן אין כאן ניווט.
+function endIntro(){
+  if (UI.introTimer){ clearTimeout(UI.introTimer); UI.introTimer = null; }
+  const box = el('intro');
+  if (!box) return;
+  box.classList.remove('go');
+  box.hidden = true;
+  fitAll();
+}
+
+function introIsOpen(){
+  const box = el('intro');
+  return !!box && !box.hidden;
 }
 
 /* --- ניווט בין מסכים --------------------------------------------------- */
@@ -1263,16 +1954,9 @@ function reshuffleTeams(){
 
 /* --- 3. מסך תפריט ------------------------------------------------------ */
 function renderMenu(){
-  renderSegs(el('menu-scroll-segs'));
+  renderScenePips(el('menu-scene-pips'));
   el('menu-story-title').textContent = KESHER.STORY.title;
-  const total = KESHER.STORY.segments.length;
-  const open = KESHER.unlockedSegments(S.familyScore).length;
-  const nextSeg = KESHER.STORY.segments.find(s => s.threshold > S.familyScore);
-  el('menu-progress').textContent =
-    (open === 1 ? 'נפתח קטע אחד' : 'נפתחו ' + open + ' קטעים') +
-    ' מתוך ' + total + ' · ' + plural(S.familyScore, 'נקודה משפחתית אחת', 'נקודות משפחתיות') +
-    (nextSeg ? ' · עוד ' + (nextSeg.threshold - S.familyScore) + ' נקודות לקטע הבא'
-             : ' · המגילה כולה נפתחה');
+  el('menu-progress').textContent = progressLine();
   el('menu-teams-line').textContent = S.teams.length
     ? plural(S.teams.length, 'צוות אחד', 'צוותים') + ' · ' +
       plural(S.players.length, 'משתתף אחד', 'משתתפים') +
@@ -1289,8 +1973,8 @@ function askWipe(){
     plural(S.players.length, 'משתתף אחד ברשימה', 'משתתפים ברשימה'),
     plural(S.teams.length, 'צוות אחד והניקוד שלו', 'צוותים והניקוד שלהם'),
     plural(S.familyScore, 'נקודה משפחתית אחת', 'נקודות משפחתיות') + ' — ' +
-      plural(KESHER.unlockedSegments(S.familyScore).length,
-             'קטע מגילה אחד יינעל מחדש', 'קטעי מגילה יינעלו מחדש'),
+      plural(KESHER.storyProgress(S.familyScore).revealed,
+             'שורת מגילה אחת תתגלגל בחזרה', 'שורות מגילה יתגלגלו בחזרה'),
     plural(S.starred.length, 'רגע אחד שסומן בכוכב', 'רגעים שסומנו בכוכב'),
     plural(Object.keys(S.cardStatus).length, 'קלף אחד שסומן כמשוחק', 'קלפים שסומנו כמשוחקים'),
     S.round ? 'הסבב שנעצר באמצע' : 'אין סבב פעיל למחוק'
@@ -1310,27 +1994,96 @@ function cancelWipe(){
 
 function confirmWipe(){
   try { localStorage.removeItem(STORAGE_KEY); } catch(e){ }
-  S = { players:[], teams:[], cardStatus:{}, starred:[], familyScore:0, shownSegments:[], round:null };
+  // introSeen נשמר בכוונה גם במחיקה: "משפחה חדשה" לא אמור להקרין מחדש
+  // את רצף הפתיחה על אותו טאבלט. מהתפריט אפשר להריץ אותו ידנית.
+  S = { players:[], teams:[], cardStatus:{}, starred:[], familyScore:0,
+        shownScenes:[], introSeen:true, round:null };
+  save();
   stopTimer();
+  UI.painted = 0; UI.sceneQueue = [];
   el('roster-name').value = ''; el('roster-age').value = '';
   el('roster-error').textContent = '';
   goRoster();
 }
 
-/* --- פס המגילה --------------------------------------------------------- */
-function renderSegs(node){
+/* --- פס הסצנות (תפריט וסיכום) ------------------------------------------
+   מקטע לכל סצנה. סצנה שהושלמה — זהב; הסצנה שבעיצומה — מקווקו; מה שלפנינו
+   נשאר אפל ובלי רמז לתוכן. */
+function renderScenePips(node){
   if (!node) return;
-  const segs = KESHER.STORY.segments;
-  const open = KESHER.unlockedSegments(S.familyScore).length;
+  const p = KESHER.storyProgress(S.familyScore);
   node.textContent = '';
-  segs.forEach((s, i) => {
+  KESHER.STORY.scenes.forEach(s => {
+    const done = p.revealed >= s.to + 1;
+    const live = !done && !!p.scene && p.scene.n === s.n;
     const d = document.createElement('div');
-    d.className = 'seg' + (i < open ? ' seg--open' : (i === open ? ' seg--next' : ''));
+    d.className = 'seg' + (done ? ' seg--open' : (live ? ' seg--next' : ''));
     d.textContent = String(s.n);
-    // ברמז למקטע נעול חושפים רק את הסף, לא את התוכן
-    d.title = i < open ? s.title : 'נפתח ב-' + s.threshold + ' נקודות';
+    d.title = (done || live)
+      ? s.title
+      : 'סצנה ' + s.n + ' · נפתחת בעוד ' + (s.from + 1 - p.revealed) + ' נקודות';
     node.append(d);
   });
+}
+
+// שורת ההתקדמות המשותפת לתפריט ולסיכום
+function progressLine(){
+  const p = KESHER.storyProgress(S.familyScore);
+  const head = p.revealed === 0
+    ? 'המגילה עוד מגולגלת — כל נקודה תחשוף שורה'
+    : (p.revealed === 1 ? 'נחשפה שורה אחת מתוך ' + p.total
+                        : 'נחשפו ' + p.revealed + ' שורות מתוך ' + p.total);
+  const where = p.scene ? ' · סצנה ' + p.scene.n + ': ' + p.scene.title : '';
+  const tail = p.isComplete
+    ? ' · המגילה כולה נחשפה'
+    : (p.revealed ? ' · עוד נקודה, עוד שורה' : '');
+  return head + where + ' · ' +
+    plural(S.familyScore, 'נקודה משפחתית אחת', 'נקודות משפחתיות') + tail;
+}
+
+/* --- הגליל שבצד מסך המשחק ----------------------------------------------
+   נבנה מחדש בכל קריאה, אבל רק השורות שמעל UI.painted מקבלות את אנימציית
+   הכניסה — כך מעבר מסך או רענון אינם מריצים שבעים אנימציות בבת אחת. */
+function renderMegilla(opts){
+  const quiet = !!(opts && opts.quiet);   // ציור ראשוני: בלי אנימציה בכלל
+  const list = el('megilla-lines');
+  if (!list) return;
+  const p = KESHER.storyProgress(S.familyScore);
+  const lines = KESHER.revealedLines(S.familyScore);
+
+  el('megilla-kicker').textContent = p.revealed
+    ? 'שורה ' + p.revealed + ' מתוך ' + p.total
+    : KESHER.STORY.source;
+  el('megilla-scene').textContent = p.scene ? p.scene.title : KESHER.STORY.title;
+
+  list.textContent = '';
+  if (!lines.length){
+    const li = document.createElement('li');
+    li.className = 'megilla__empty';
+    li.textContent = 'הצנצנת עוד סתומה. הנקודה הראשונה פותחת אותה.';
+    list.append(li);
+    el('megilla-legend').hidden = true;
+    UI.painted = 0;
+    return;
+  }
+
+  const scene = p.scene;
+  const animateFrom = quiet ? lines.length : UI.painted;
+  lines.forEach((ln, i) => {
+    const li = document.createElement('li');
+    const live = scene && i >= scene.from;     // השורות של הסצנה שבעיצומה
+    li.className = 'mline' +
+      (live ? ' mline--live' : '') +
+      (i === lines.length - 1 ? ' mline--last' : '') +
+      (ln.source ? ' mline--src' : '') +
+      (i >= animateFrom ? ' mline--new' : '');
+    li.textContent = ln.text;
+    list.append(li);
+  });
+  el('megilla-legend').hidden = !lines.some(ln => ln.source);
+  UI.painted = lines.length;
+  // תמיד מראים את השורה החדשה, גם כשהגליל כבר ארוך מהמסך
+  list.scrollTop = list.scrollHeight;
 }
 
 /* --- 4. מסך משחק ------------------------------------------------------- */
@@ -1350,7 +2103,8 @@ function startRound(size){
   save();
   showScreen('game-screen');
   renderGame();
-  flushSegments();   // בערב הראשון זה פותח את הקטע הראשון (סף 0)
+  // סבב חדש: הגליל נצבע כמו שהוא, בלי להנפיש שורות שנחשפו בערבים קודמים
+  renderMegilla({ quiet:true });
 }
 
 function currentTurn(){
@@ -1369,12 +2123,15 @@ function renderGame(){
   const team = S.teams.find(t => t.id === turn.teamId) || S.teams[0];
   if (!card || !meta || !team){ endRound(); return; }
 
-  renderSegs(el('scroll-segs'));
+  // הגליל שבצד אינו נצבע כאן בכוונה: flushMegilla הוא שמוסיף את השורה
+  // החדשה עם האנימציה, וציור נוסף אחריו היה מבטל אותה.
   renderBoard(turn.teamId);
 
   const deck = KESHER.DECKS[card.deck];
   el('card-deck').textContent = deck.name;
   el('card-stamp').innerHTML = stampSvg(deck.stamp);
+  // אותה חותמת, גדולה ודהויה, כסימן מים בפינת הקלף
+  el('card-mark').innerHTML = stampSvg(deck.stamp);
 
   const rolesEl = el('card-roles');
   rolesEl.textContent = '';
@@ -1450,6 +2207,9 @@ function renderBoard(turnTeamId){
 function applyCardText(card, meta){
   const txt = el('card-text'), shroud = el('card-shroud'), btn = el('secret-btn');
   const concealed = !!meta.secret && !UI.secretShown;
+  // סימון ויזואלי בלבד: הקלף החתום מקבל את כל שטח הפנים שלו (ראו CSS)
+  const cardEl = el('card');
+  if (cardEl) cardEl.classList.toggle('card--sealed', concealed);
   if (concealed){
     txt.textContent = '';        // מסיר את צומת הטקסט מה-DOM
     txt.hidden = true;
@@ -1485,11 +2245,13 @@ function renderActions(meta){
   box.textContent = '';
   const main = document.createElement('div');
   main.className = 'actions__main';
-  if (meta.scoring){
+  if (meta.scoring === 'story'){
+    // קלפי זיכרון: הנקודה היא על השתתפות, אין שיפוט הצלחה/כישלון —
+    // כפתור בודד, שמעניק את הנקודה בלחיצה (בלי שאלת הצלחה).
+    main.append(actionBtn('done', 'סיימנו', 'btn btn--gold btn--big'));
+  } else {
     main.append(actionBtn('ok', 'הצליחו', 'btn btn--ok btn--big'));
     main.append(actionBtn('no', 'לא הצליחו', 'btn btn--no btn--big'));
-  } else {
-    main.append(actionBtn('done', 'סיימנו', 'btn btn--gold btn--big'));
   }
   box.append(main);
   box.append(actionBtn('skip', 'דלגו', 'btn btn--ghost btn--wide'));
@@ -1522,12 +2284,14 @@ function finishCard(markDone, scored){
   save();
   if (S.round.idx >= S.round.turns.length) endRound();
   else renderGame();
-  flushSegments();   // החשיפה נפתחת מעל המסך שכבר התעדכן
+  flushMegilla();    // שורה אחת נכנסת לגליל; סצנה שהושלמה עולה על המסך
 }
 
 function cardOk(){   finishCard(true,  true);  }
 function cardNo(){   finishCard(true,  false); }
-function cardDone(){ finishCard(true,  false); }
+// "סיימנו" מופיע רק על קלפי scoring:'story' (ראו renderActions) — הנקודה
+// היא על ההשתתפות עצמה, ולכן תמיד מוענקת, בלי שאלת הצלחה/כישלון.
+function cardDone(){ finishCard(true,  true); }
 // "דלגו" אינו מסמן את הקלף כמשוחק — הוא יוכל לחזור בסבב אחר
 function cardSkip(){ finishCard(false, false); }
 
@@ -1645,42 +2409,59 @@ function playChime(){
   } catch(e){ /* אין אודיו — המשחק ממשיך בשקט */ }
 }
 
-/* --- חשיפת קטע מגילה --------------------------------------------------- */
-function pendingSegments(){
-  return KESHER.unlockedSegments(S.familyScore)
-    .filter(s => S.shownSegments.indexOf(s.n) === -1);
+/* --- חשיפת המגילה ------------------------------------------------------
+   שתי מהירויות. שורה בודדת: נכנסת לגליל שבצד בחצי שנייה, בלי לעצור את
+   המשחק — זה קורה בכל נקודה. סצנה שהושלמה: משתלטת על המסך, קוראת את
+   הסצנה כולה מחדש ומביאה את הערות המקור — בערך פעם בשבע נקודות. */
+function completedScenes(){
+  const revealed = KESHER.storyProgress(S.familyScore).revealed;
+  return KESHER.STORY.scenes.filter(s =>
+    revealed >= s.to + 1 && S.shownScenes.indexOf(s.n) === -1);
 }
 
-function flushSegments(){
-  const pending = pendingSegments();
-  if (!pending.length) return;
-  UI.segQueue = pending;
-  showNextSegment();
+function flushMegilla(){
+  renderMegilla();                       // השורה החדשה מגיעה בשקט
+  const done = completedScenes();
+  if (!done.length) return;
+  UI.sceneQueue = done;
+  showNextScene();
 }
 
-function showNextSegment(){
-  const seg = UI.segQueue.shift();
-  if (!seg){ el('segment-overlay').hidden = true; return; }
-  if (S.shownSegments.indexOf(seg.n) === -1) S.shownSegments.push(seg.n);
+function showNextScene(){
+  const scene = UI.sceneQueue.shift();
+  if (!scene){ el('scene-overlay').hidden = true; return; }
+  if (S.shownScenes.indexOf(scene.n) === -1) S.shownScenes.push(scene.n);
   save();
-  el('segment-kicker').textContent =
-    'קטע ' + seg.n + ' מתוך ' + KESHER.STORY.segments.length + ' · ' + KESHER.STORY.title;
-  el('segment-title').textContent = seg.title;
-  el('segment-text').textContent = seg.text;
-  el('segment-adults').textContent = seg.forAdults;
-  const ov = el('segment-overlay');
+
+  const lines = KESHER.STORY.lines.slice(scene.from, scene.to + 1);
+  el('scene-kicker').textContent = 'סצנה ' + scene.n + ' מתוך ' +
+    KESHER.STORY.scenes.length + ' · ' + KESHER.STORY.title;
+  el('scene-title').textContent = scene.title;
+  el('scene-text').textContent = lines.map(l => l.text).join(' ');
+
+  const notes = lines.filter(l => l.source);
+  const box = el('scene-adults-text');
+  box.textContent = '';
+  notes.forEach(l => {
+    const p = document.createElement('p');
+    p.className = 'adults__p';
+    p.textContent = l.source;
+    box.append(p);
+  });
+  el('scene-adults').hidden = !notes.length;
+
+  const ov = el('scene-overlay');
   ov.hidden = false;
-  // מאלצים הרצה מחדש של אנימציית הכניסה גם בקטע שני ברצף
+  // מאלצים הרצה מחדש של אנימציית הכניסה גם בסצנה שנייה ברצף
   const panel = ov.firstElementChild;
   if (panel){ panel.style.animation = 'none'; void panel.offsetWidth; panel.style.animation = ''; }
-  renderSegs(el('scroll-segs'));
-  renderSegs(el('menu-scroll-segs'));
-  renderSegs(el('summary-scroll-segs'));
+  renderScenePips(el('menu-scene-pips'));
+  renderScenePips(el('summary-scene-pips'));
 }
 
-function closeSegment(){
-  if (UI.segQueue.length){ showNextSegment(); return; }
-  el('segment-overlay').hidden = true;
+function closeScene(){
+  if (UI.sceneQueue.length){ showNextScene(); return; }
+  el('scene-overlay').hidden = true;
   fitAll();
 }
 
@@ -1756,15 +2537,8 @@ function renderSummary(){
     });
   }
 
-  renderSegs(el('summary-scroll-segs'));
-  const total = KESHER.STORY.segments.length;
-  const open = KESHER.unlockedSegments(S.familyScore).length;
-  const nextSeg = KESHER.STORY.segments.find(s => s.threshold > S.familyScore);
-  el('summary-progress').textContent =
-    (open === 1 ? 'נפתח קטע אחד' : 'נפתחו ' + open + ' קטעים') + ' מתוך ' + total +
-    ' · ' + plural(S.familyScore, 'נקודה משפחתית אחת', 'נקודות משפחתיות') +
-    (nextSeg ? ' · עוד ' + (nextSeg.threshold - S.familyScore) + ' נקודות לקטע "' + nextSeg.title + '"'
-             : ' · המגילה כולה נפתחה');
+  renderScenePips(el('summary-scene-pips'));
+  el('summary-progress').textContent = progressLine();
   fitAll();
 }
 
@@ -1839,6 +2613,11 @@ function bindEvents(){
   const onEnter = ev => { if (ev.key === 'Enter'){ ev.preventDefault(); addPlayer(); } };
   el('roster-name').addEventListener('keydown', onEnter);
   el('roster-age').addEventListener('keydown', onEnter);
+
+  // Escape מדלג על רצף הפתיחה, בלי לחפש את הכפתור
+  document.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape' && introIsOpen()){ ev.preventDefault(); endIntro(); }
+  });
 }
 
 function boot(){
@@ -1854,13 +2633,20 @@ function boot(){
     // רענון באמצע סבב חוזר לאותו קלף עם אותו ניקוד
     renderMenu();
     if (S.round.idx >= S.round.turns.length) endRound();
-    else { showScreen('game-screen'); renderGame(); }
+    else { showScreen('game-screen'); renderGame(); renderMegilla({ quiet:true }); }
   } else if (S.teams.length && S.players.length >= KESHER.MIN_PLAYERS){
     renderMenu(); showScreen('menu-screen');
   } else {
     showScreen('roster-screen');
   }
   fitAll();
+
+  // הפעלה ראשונה בלבד: הרצף רץ מעל המסך שנבחר ומוסר אליו בסופו
+  if (!S.introSeen){
+    S.introSeen = true;
+    save();
+    playIntro();
+  }
 }
 
 // boot רץ רק כשיש DOM אמיתי. בסביבת הבדיקות (vm sandbox) ל-window אין
