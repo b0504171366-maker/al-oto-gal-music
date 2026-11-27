@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0A1428">
+<title>קשר משפחתי</title>
+<!-- התקנה כאפליקציה. קבצי התמיכה נטענים רק כשהמשחק מתארח בשרת;
+     בהטמעה בתוך iframe הם פשוט לא נמצאים וזה לא שובר כלום. -->
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="קשר משפחתי">
+<style>
+:root{
+  --ground:#0A1428; --surface:#132240; --raised:#1D3157;
+  --gold:#D9A441; --foil:#F2D398; --ivory:#F7F2E7; --muted:#A8B6CE;
+  --flame:#FF9F43; --ok:#5FD08A; --no:#E0697A;
+  --fit:1; --deck-px:430;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{
+  position:fixed; inset:0; margin:0; overflow:hidden;
+  background:var(--ground); color:var(--ivory);
+  font-family:"Heebo","Assistant",system-ui,"Segoe UI",sans-serif;
+  overscroll-behavior:none; touch-action:manipulation;
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+.app{position:relative; display:flex; flex-direction:column; height:100dvh; overflow:hidden}
+
+/* --- אור נרות: שתי הילות חמות מלמטה, ריצוד איטי מאוד (7.5 שניות) ובשינוי
+   אטימות של אחוזים בודדים בלבד. אסור שיסיח מהטקסט. --------------------- */
+.app::before{
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(130% 78% at 50% 116%, rgba(255,159,67,.26), rgba(255,159,67,0) 62%),
+    radial-gradient(62% 46% at 16% 108%, rgba(217,164,65,.16), transparent 62%),
+    radial-gradient(62% 46% at 84% 108%, rgba(217,164,65,.16), transparent 62%);
+  animation:candle 7.5s ease-in-out infinite;
+}
+@keyframes candle{0%,100%{opacity:.9}50%{opacity:1}}
+
+.stage{position:relative; z-index:1; display:flex; flex:1; min-height:0}
+.screen{display:none; flex:1; min-height:0}
+.screen.active{
+  display:flex; flex-direction:column; min-width:0;
+  gap:calc(10px*var(--fit));
+  padding:calc(14px*var(--fit)) calc(18px*var(--fit));
+}
+
+/* --- טיפוגרפיה בסיסית ------------------------------------------------- */
+.h1{
+  margin:0; font-size:max(26px,calc(44px*var(--fit))); font-weight:800;
+  letter-spacing:-.02em; color:var(--foil);
+  text-shadow:0 calc(2px*var(--fit)) calc(18px*var(--fit)) rgba(217,164,65,.28);
+}
+.h2{margin:0; font-size:max(20px,calc(28px*var(--fit))); font-weight:700; color:var(--foil)}
+.lead{margin:0; font-size:max(16px,calc(20px*var(--fit))); color:var(--muted); line-height:1.4}
+.label{font-size:max(16px,calc(20px*var(--fit))); color:var(--muted); font-weight:600}
+.err{
+  min-height:calc(24px*var(--fit)); font-size:max(16px,calc(19px*var(--fit)));
+  color:var(--no); font-weight:600;
+}
+.rule{
+  height:2px; flex:0 0 auto; border-radius:2px;
+  background:linear-gradient(90deg,transparent,rgba(217,164,65,.55),transparent);
+}
+
+/* --- כפתורים ---------------------------------------------------------- */
+.btn{
+  font:inherit; cursor:pointer; color:var(--ivory);
+  border:1px solid rgba(217,164,65,.45);
+  background:linear-gradient(180deg,var(--raised),var(--surface));
+  border-radius:calc(14px*var(--fit));
+  padding:calc(13px*var(--fit)) calc(22px*var(--fit));
+  font-size:max(18px,calc(22px*var(--fit))); font-weight:700;
+  transition:transform .12s ease, filter .12s ease, box-shadow .12s ease;
+}
+.btn:hover{filter:brightness(1.1)}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:3px solid var(--foil); outline-offset:2px}
+.btn[disabled]{opacity:.4; cursor:not-allowed; filter:none; transform:none}
+.btn--gold{background:linear-gradient(180deg,var(--foil),var(--gold) 55%,#B07E2B); color:#1C1304; border-color:var(--foil)}
+.btn--ok{background:linear-gradient(180deg,#7FE8AA,var(--ok) 55%,#3BA06A); color:#06220F; border-color:#9BF0BE}
+.btn--no{background:linear-gradient(180deg,#F08F9C,var(--no) 55%,#B9465A); color:#2B0812; border-color:#F7B3BC}
+.btn--ghost{background:transparent; border-color:rgba(168,182,206,.32); color:var(--muted); font-weight:600}
+.btn--danger{background:transparent; border-color:rgba(224,105,122,.55); color:var(--no)}
+.btn--big{font-size:max(22px,calc(30px*var(--fit))); padding:calc(19px*var(--fit)) calc(26px*var(--fit))}
+.btn--wide{width:100%}
+.row{display:flex; gap:calc(10px*var(--fit)); flex-wrap:wrap}
+.row--end{justify-content:flex-end}
+.spacer{flex:1; min-height:0}
+
+/* --- שדות קלט --------------------------------------------------------- */
+.field{display:flex; flex-direction:column; gap:calc(5px*var(--fit)); min-width:0}
+.input{
+  font:inherit; font-size:max(18px,calc(24px*var(--fit))); font-weight:600;
+  color:var(--ivory); background:#0C1832;
+  border:1px solid rgba(217,164,65,.35); border-radius:calc(12px*var(--fit));
+  padding:calc(12px*var(--fit)) calc(14px*var(--fit)); min-width:0; width:100%;
+}
+.input:focus{outline:none; border-color:var(--foil); box-shadow:0 0 0 3px rgba(217,164,65,.25)}
+.input--age{text-align:center}
+
+/* --- פס המגילה: הגיבורה הוויזואלית ------------------------------------
+   עשרה מקטעים בין שני מוטות גלילה. מקטע פתוח זוהר בגווני קלף וזהב,
+   המקטע הבא מסומן בקו מקווקו והילה חלשה. ------------------------------ */
+.scrollbar{
+  display:flex; align-items:stretch; gap:calc(6px*var(--fit));
+  flex:0 0 auto; height:calc(60px*var(--fit)); min-height:46px;
+}
+.rod{
+  flex:0 0 calc(15px*var(--fit)); min-width:11px; border-radius:calc(8px*var(--fit));
+  background:linear-gradient(90deg,#2E2110,#7A5C28 32%,#E6C77E 52%,#6B4F22 78%,#2E2110);
+  box-shadow:0 0 0 1px rgba(0,0,0,.55), 0 calc(4px*var(--fit)) calc(12px*var(--fit)) rgba(0,0,0,.45);
+}
+.segs{
+  display:flex; flex:1; min-width:0; gap:calc(4px*var(--fit));
+  padding:calc(5px*var(--fit)); border-radius:calc(11px*var(--fit));
+  background:linear-gradient(180deg,#0C1A33,#081124);
+  border:1px solid rgba(217,164,65,.22);
+  box-shadow:inset 0 calc(2px*var(--fit)) calc(8px*var(--fit)) rgba(0,0,0,.5);
+}
+.seg{
+  flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center;
+  border-radius:calc(7px*var(--fit)); background:#101D37; color:#4B5C79;
+  font-size:max(16px,calc(19px*var(--fit))); font-weight:800;
+  border:1px solid rgba(255,255,255,.05);
+  transition:background .5s ease, color .5s ease, box-shadow .5s ease;
+}
+.seg--open{
+  background:linear-gradient(180deg,#F6E4B8,var(--gold) 68%,#B07E2B);
+  color:#2A1B06; border-color:var(--foil);
+  box-shadow:0 0 calc(13px*var(--fit)) rgba(217,164,65,.45);
+}
+.seg--next{
+  border:2px dashed rgba(242,211,152,.7); color:var(--foil); background:#13223F;
+  animation:pulseNext 3.4s ease-in-out infinite;
+}
+@keyframes pulseNext{
+  0%,100%{box-shadow:0 0 0 rgba(242,211,152,0)}
+  50%{box-shadow:0 0 calc(15px*var(--fit)) rgba(242,211,152,.42)}
+}
+
+/* --- לוח ניקוד -------------------------------------------------------- */
+.board{display:flex; flex:0 0 auto; gap:calc(8px*var(--fit)); min-width:0}
+.chip{
+  flex:1 1 0; min-width:0; display:flex; align-items:center; gap:calc(10px*var(--fit));
+  padding:calc(8px*var(--fit)) calc(12px*var(--fit));
+  border-radius:calc(13px*var(--fit));
+  background:linear-gradient(180deg,var(--raised),#101E39);
+  border:1px solid rgba(255,255,255,.07);
+}
+.chip--turn{
+  border-color:var(--foil); background:linear-gradient(180deg,#2A3F6B,#16294C);
+  box-shadow:0 0 calc(16px*var(--fit)) rgba(217,164,65,.35);
+}
+.chip__txt{min-width:0; display:flex; flex-direction:column}
+.chip__name{
+  font-size:max(20px,calc(22px*var(--fit))); font-weight:800; color:var(--foil);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.chip__who{
+  font-size:max(16px,calc(17px*var(--fit))); color:var(--muted);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.chip__score{
+  margin-inline-start:auto; font-size:max(24px,calc(34px*var(--fit)));
+  font-weight:800; color:var(--ivory); font-variant-numeric:tabular-nums;
+}
+.chip--turn .chip__score{color:var(--flame)}
+
+/* --- הקלף ------------------------------------------------------------- */
+.card{
+  position:relative; flex:1; min-height:0; display:flex; flex-direction:column;
+  gap:calc(10px*var(--fit)); width:100%; max-width:calc(var(--deck-px)*2.1px);
+  margin:0 auto; padding:calc(16px*var(--fit)) calc(22px*var(--fit));
+  border-radius:calc(22px*var(--fit));
+  background:
+    radial-gradient(150% 90% at 50% 0%, rgba(217,164,65,.13), transparent 62%),
+    linear-gradient(180deg,var(--surface),#0D1A32);
+  border:1px solid rgba(217,164,65,.38);
+  box-shadow:0 calc(18px*var(--fit)) calc(42px*var(--fit)) rgba(0,0,0,.55),
+             inset 0 0 0 1px rgba(255,255,255,.03);
+}
+/* פינות זהב — מוסיפות תחושת קלף מודפס ולא תיבה */
+.card::before,.card::after{
+  content:''; position:absolute; width:calc(26px*var(--fit)); height:calc(26px*var(--fit));
+  border:2px solid rgba(242,211,152,.5); pointer-events:none;
+}
+.card::before{inset-inline-start:calc(10px*var(--fit)); top:calc(10px*var(--fit));
+  border-left:0; border-bottom:0; border-top-right-radius:calc(8px*var(--fit))}
+.card::after{inset-inline-end:calc(10px*var(--fit)); bottom:calc(10px*var(--fit));
+  border-right:0; border-top:0; border-bottom-left-radius:calc(8px*var(--fit))}
+html[dir="rtl"] .card::before{border:2px solid rgba(242,211,152,.5); border-right:0; border-bottom:0;
+  border-top-left-radius:calc(8px*var(--fit)); border-top-right-radius:0}
+html[dir="rtl"] .card::after{border:2px solid rgba(242,211,152,.5); border-left:0; border-top:0;
+  border-bottom-right-radius:calc(8px*var(--fit)); border-bottom-left-radius:0}
+
+.card__top{display:flex; align-items:center; gap:calc(12px*var(--fit)); flex:0 0 auto}
+.stamp{
+  flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+  width:calc(46px*var(--fit)); height:calc(46px*var(--fit)); min-width:34px; min-height:34px;
+  border-radius:50%; border:1px solid rgba(217,164,65,.5); background:#0B1730;
+}
+.stamp svg{width:66%; height:66%; display:block}
+.card__deck{
+  font-size:max(18px,calc(23px*var(--fit))); font-weight:700; color:var(--gold);
+  letter-spacing:.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.star{
+  margin-inline-start:auto; flex:0 0 auto; display:flex; align-items:center;
+  gap:calc(8px*var(--fit)); cursor:pointer; font:inherit;
+  font-size:max(16px,calc(18px*var(--fit))); font-weight:700; color:var(--muted);
+  background:transparent; border:1px solid rgba(168,182,206,.3);
+  border-radius:calc(99px*var(--fit)); padding:calc(7px*var(--fit)) calc(14px*var(--fit));
+}
+.star svg{width:calc(22px*var(--fit)); min-width:18px; height:auto; display:block; fill:none;
+  stroke:currentColor; stroke-width:1.6}
+.star[aria-pressed="true"]{color:var(--flame); border-color:var(--flame)}
+.star[aria-pressed="true"] svg{fill:var(--flame); stroke:var(--flame)}
+
+/* חלוקת התפקידים — שורה נפרדת מעל הטקסט */
+.roles{
+  flex:0 0 auto; text-align:center; padding:calc(8px*var(--fit)) calc(12px*var(--fit));
+  border-radius:calc(12px*var(--fit)); background:rgba(255,159,67,.1);
+  border:1px solid rgba(255,159,67,.35);
+}
+.roles__names{
+  font-size:max(20px,calc(28px*var(--fit))); font-weight:800; color:var(--flame);
+  line-height:1.2;
+}
+.roles__canon{
+  margin-top:calc(2px*var(--fit));
+  font-size:max(16px,calc(18px*var(--fit))); color:var(--muted); font-weight:600;
+}
+
+.card__body{
+  flex:1; min-height:0; display:flex; align-items:center; justify-content:center;
+  overflow:hidden; padding:calc(4px*var(--fit)) 0;
+}
+.card__text{
+  margin:0; text-align:center; font-weight:700; line-height:1.22;
+  color:var(--ivory); letter-spacing:-.01em;
+  font-size:max(26px,calc(50px*var(--fit)));
+  text-wrap:balance;
+}
+/* הצצה פרטית: מה שמוצג במקום הטקסט. הטקסט עצמו אינו נכתב ל-DOM כלל. */
+.shroud{
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  gap:calc(14px*var(--fit));
+}
+.shroud__t{font-size:max(22px,calc(36px*var(--fit))); font-weight:800; color:var(--foil); line-height:1.2}
+.shroud__s{font-size:max(16px,calc(20px*var(--fit))); color:var(--muted); max-width:36ch; line-height:1.4}
+
+.card__foot{
+  flex:0 0 auto; display:flex; align-items:center; gap:calc(14px*var(--fit));
+  flex-wrap:wrap;
+}
+.aud{
+  font-size:max(18px,calc(24px*var(--fit))); font-weight:800; color:var(--gold);
+  padding:calc(6px*var(--fit)) calc(14px*var(--fit));
+  border-radius:calc(99px*var(--fit)); border:1px dashed rgba(217,164,65,.45);
+}
+.timer{margin-inline-start:auto; display:flex; align-items:center; gap:calc(10px*var(--fit))}
+.timer__ring{
+  position:relative; width:calc(74px*var(--fit)); height:calc(74px*var(--fit));
+  min-width:56px; min-height:56px;
+}
+.timer__ring svg{width:100%; height:100%; display:block; transform:rotate(-90deg)}
+.timer__track{fill:none; stroke:rgba(168,182,206,.22); stroke-width:7}
+.timer__arc{fill:none; stroke:var(--flame); stroke-width:7; stroke-linecap:round;
+  transition:stroke-dashoffset .3s linear}
+.timer__digits{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:max(18px,calc(24px*var(--fit))); font-weight:800; color:var(--ivory);
+  font-variant-numeric:tabular-nums;
+}
+.timer--out .timer__arc{stroke:var(--no)}
+.timer--out .timer__digits{color:var(--no)}
+
+/* --- פעולות ----------------------------------------------------------- */
+.actions{flex:0 0 auto; display:flex; flex-direction:column; gap:calc(8px*var(--fit))}
+.actions__main{display:flex; gap:calc(10px*var(--fit))}
+.actions__main .btn{flex:1 1 0}
+.foot{
+  flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+  gap:calc(12px*var(--fit)); font-size:max(16px,calc(18px*var(--fit))); color:var(--muted);
+  font-weight:600;
+}
+
+/* --- מסך הרכב --------------------------------------------------------- */
+.roster{display:flex; flex:1; min-height:0; gap:calc(16px*var(--fit)); flex-wrap:wrap}
+.roster__form{
+  flex:1 1 calc(300px*var(--fit)); min-width:min(100%,260px);
+  display:flex; flex-direction:column; gap:calc(10px*var(--fit));
+  align-content:start;
+}
+.roster__grid{display:flex; gap:calc(10px*var(--fit))}
+.roster__grid .field:first-child{flex:1 1 auto}
+.roster__grid .field:last-child{flex:0 0 calc(104px*var(--fit)); min-width:84px}
+.roster__side{flex:2 1 calc(380px*var(--fit)); min-width:min(100%,280px);
+  display:flex; flex-direction:column; min-height:0; gap:calc(8px*var(--fit))}
+.people{
+  list-style:none; margin:0; padding:0; min-height:0; overflow:auto;
+  display:grid; align-content:start; gap:calc(8px*var(--fit));
+  grid-template-columns:repeat(auto-fill,minmax(calc(190px*var(--fit)),1fr));
+}
+.person{
+  display:flex; align-items:center; gap:calc(10px*var(--fit));
+  padding:calc(9px*var(--fit)) calc(12px*var(--fit));
+  border-radius:calc(12px*var(--fit));
+  background:linear-gradient(180deg,var(--raised),#101E39);
+  border:1px solid rgba(255,255,255,.07);
+}
+.person__name{
+  font-size:max(18px,calc(22px*var(--fit))); font-weight:700; min-width:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.person__age{
+  font-size:max(16px,calc(18px*var(--fit))); color:var(--gold); font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+.person__x{
+  margin-inline-start:auto; flex:0 0 auto; cursor:pointer; font:inherit;
+  font-size:max(16px,calc(18px*var(--fit))); font-weight:700; color:var(--muted);
+  background:transparent; border:1px solid rgba(168,182,206,.3);
+  border-radius:calc(9px*var(--fit)); padding:calc(3px*var(--fit)) calc(10px*var(--fit));
+}
+.person__x:hover{color:var(--no); border-color:var(--no)}
+
+/* --- מסך צוותים ------------------------------------------------------- */
+.teams{
+  flex:1; min-height:0; display:grid; gap:calc(12px*var(--fit)); align-content:center;
+  grid-template-columns:repeat(auto-fit,minmax(calc(230px*var(--fit)),1fr));
+  overflow:auto;
+}
+.team{
+  display:flex; flex-direction:column; gap:calc(8px*var(--fit));
+  padding:calc(14px*var(--fit)); border-radius:calc(18px*var(--fit));
+  background:linear-gradient(180deg,var(--surface),#0D1A32);
+  border:1px solid rgba(217,164,65,.32);
+  box-shadow:0 calc(10px*var(--fit)) calc(26px*var(--fit)) rgba(0,0,0,.4);
+}
+.team__no{
+  font-size:max(20px,calc(26px*var(--fit))); font-weight:800; color:var(--foil);
+  display:flex; align-items:center; gap:calc(8px*var(--fit));
+}
+.team__no i{
+  width:calc(10px*var(--fit)); height:calc(10px*var(--fit)); min-width:8px; min-height:8px;
+  border-radius:50%; background:var(--gold); display:block;
+}
+.team__member{
+  display:flex; align-items:baseline; gap:calc(8px*var(--fit));
+  font-size:max(18px,calc(24px*var(--fit))); font-weight:700;
+}
+.team__member small{font-size:max(16px,calc(18px*var(--fit))); color:var(--gold); font-weight:700}
+.team__tag{font-size:max(16px,calc(17px*var(--fit))); color:var(--muted); font-weight:600}
+
+/* --- מסך תפריט -------------------------------------------------------- */
+.menu{flex:1; min-height:0; display:flex; flex-direction:column;
+  gap:calc(12px*var(--fit)); justify-content:center; max-width:calc(760px*var(--fit));
+  width:100%; margin:0 auto}
+.panel{
+  padding:calc(14px*var(--fit)) calc(18px*var(--fit)); border-radius:calc(16px*var(--fit));
+  background:rgba(19,34,64,.7); border:1px solid rgba(217,164,65,.25);
+  display:flex; flex-direction:column; gap:calc(8px*var(--fit));
+}
+.panel--warn{border-color:rgba(224,105,122,.5); background:rgba(224,105,122,.08)}
+.panel ul{margin:0; padding-inline-start:calc(22px*var(--fit));
+  font-size:max(16px,calc(19px*var(--fit))); color:var(--ivory); line-height:1.5}
+
+/* --- חשיפת קטע מגילה -------------------------------------------------- */
+.overlay{
+  position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center;
+  padding:calc(18px*var(--fit)); background:rgba(4,9,20,.93);
+}
+.overlay__panel{
+  width:min(calc(900px*var(--fit)),96%); max-height:94%;
+  display:flex; flex-direction:column; gap:calc(10px*var(--fit));
+  padding:calc(22px*var(--fit)) calc(26px*var(--fit));
+  border-radius:calc(22px*var(--fit));
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgba(217,164,65,.16), transparent 60%),
+    linear-gradient(180deg,#1A2A4C,#0B1730);
+  border:1px solid var(--gold);
+  box-shadow:0 0 calc(70px*var(--fit)) rgba(217,164,65,.3);
+  animation:unseal .75s cubic-bezier(.16,.84,.26,1) both;
+}
+@keyframes unseal{
+  from{transform:translateY(calc(26px*var(--fit))) scale(.9); opacity:0}
+  to{transform:none; opacity:1}
+}
+.overlay__kicker{
+  font-size:max(16px,calc(19px*var(--fit))); font-weight:800; color:var(--gold);
+  letter-spacing:.08em;
+}
+.overlay__title{margin:0; font-size:max(26px,calc(42px*var(--fit))); font-weight:800; color:var(--foil); line-height:1.15}
+.overlay__body{min-height:0; overflow:auto; display:flex; flex-direction:column; gap:calc(12px*var(--fit))}
+.overlay__text{margin:0; font-size:max(19px,calc(27px*var(--fit))); line-height:1.4; color:var(--ivory)}
+.adults{
+  padding:calc(12px*var(--fit)) calc(14px*var(--fit)); border-radius:calc(13px*var(--fit));
+  background:rgba(217,164,65,.09); border-inline-start:3px solid var(--gold);
+  display:flex; flex-direction:column; gap:calc(5px*var(--fit));
+}
+.adults__h{font-size:max(16px,calc(20px*var(--fit))); font-weight:800; color:var(--gold)}
+.adults__t{font-size:max(16px,calc(21px*var(--fit))); line-height:1.42; color:var(--ivory)}
+
+/* --- מסך סיכום -------------------------------------------------------- */
+.summary{flex:1; min-height:0; display:flex; flex-direction:column; gap:calc(10px*var(--fit))}
+.summary__cols{display:flex; flex:1; min-height:0; gap:calc(14px*var(--fit)); flex-wrap:wrap}
+.summary__col{flex:1 1 calc(300px*var(--fit)); min-width:min(100%,260px);
+  display:flex; flex-direction:column; min-height:0; gap:calc(8px*var(--fit))}
+.winner{
+  padding:calc(14px*var(--fit)) calc(18px*var(--fit)); border-radius:calc(18px*var(--fit));
+  background:linear-gradient(180deg,rgba(242,211,152,.2),rgba(217,164,65,.08));
+  border:1px solid var(--gold); text-align:center;
+}
+.winner__k{font-size:max(16px,calc(20px*var(--fit))); color:var(--gold); font-weight:800}
+.winner__n{font-size:max(24px,calc(38px*var(--fit))); font-weight:800; color:var(--foil); line-height:1.2}
+.table{display:flex; flex-direction:column; gap:calc(6px*var(--fit)); min-height:0; overflow:auto}
+.trow{
+  display:flex; align-items:center; gap:calc(10px*var(--fit));
+  padding:calc(9px*var(--fit)) calc(13px*var(--fit)); border-radius:calc(11px*var(--fit));
+  background:rgba(29,49,87,.7); border:1px solid rgba(255,255,255,.06);
+  font-size:max(18px,calc(22px*var(--fit))); font-weight:700;
+}
+.trow--top{border-color:var(--gold); background:rgba(217,164,65,.14)}
+.trow b{margin-inline-start:auto; font-size:max(20px,calc(28px*var(--fit))); font-variant-numeric:tabular-nums}
+.stars{list-style:none; margin:0; padding:0; min-height:0; overflow:auto;
+  display:flex; flex-direction:column; gap:calc(6px*var(--fit))}
+.stars li{
+  padding:calc(9px*var(--fit)) calc(13px*var(--fit)); border-radius:calc(11px*var(--fit));
+  background:rgba(255,159,67,.1); border-inline-start:3px solid var(--flame);
+  font-size:max(16px,calc(20px*var(--fit))); line-height:1.35;
+}
+.empty{font-size:max(16px,calc(19px*var(--fit))); color:var(--muted)}
+
+@media (prefers-reduced-motion:reduce){
+  .app::before{animation:none}
+  .seg--next{animation:none}
+  .overlay__panel{animation:none}
+  .btn,.seg,.timer__arc{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <main class="stage">
+
+  <!-- ===== 1. מסך הרכב ================================================= -->
+  <section class="screen active" id="roster-screen">
+    <h1 class="h1">קשר משפחתי</h1>
+    <p class="lead">מי איתנו הערב? שם וגיל לכל אחד. צריך לפחות ארבעה.</p>
+    <div class="rule"></div>
+    <div class="roster">
+      <div class="roster__form">
+        <div class="roster__grid">
+          <div class="field">
+            <label class="label" for="roster-name">שם</label>
+            <input class="input" id="roster-name" type="text" autocomplete="off"
+                   maxlength="18" placeholder="דנה">
+          </div>
+          <div class="field">
+            <label class="label" for="roster-age">גיל</label>
+            <input class="input input--age" id="roster-age" type="number"
+                   inputmode="numeric" min="3" max="120" step="1" placeholder="12">
+          </div>
+        </div>
+        <div class="err" id="roster-error" role="alert" aria-live="polite"></div>
+        <button class="btn btn--gold btn--wide" id="roster-add" type="button"
+                onclick="addPlayer()">מוסיפים לרשימה</button>
+        <div class="spacer"></div>
+        <p class="lead" id="roster-hint"></p>
+        <button class="btn btn--big btn--wide" id="roster-next" type="button"
+                onclick="goTeams()" disabled>ממשיכים</button>
+      </div>
+      <div class="roster__side">
+        <h2 class="h2" id="roster-count">הרשימה</h2>
+        <ul class="people" id="roster-list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 2. מסך צוותים ============================================== -->
+  <section class="screen" id="teams-screen">
+    <h1 class="h1">הצוותים שלנו</h1>
+    <p class="lead">בכל צוות הצעיר והבוגר ביותר שנותרו — הפער הוא הנכס של המשחק.
+      הצעיר תמיד ראשון.</p>
+    <div class="rule"></div>
+    <div class="teams" id="teams-list"></div>
+    <div class="row row--end">
+      <button class="btn btn--ghost" type="button" onclick="goRoster()">חזרה להרכב</button>
+      <button class="btn" type="button" onclick="reshuffleTeams()">ערבבו מחדש</button>
+      <button class="btn btn--gold btn--big" type="button" onclick="goMenu()">מתחילים</button>
+    </div>
+  </section>
+
+  <!-- ===== 3. מסך תפריט =============================================== -->
+  <section class="screen" id="menu-screen">
+    <h1 class="h1">קשר משפחתי</h1>
+    <div class="menu">
+      <div class="row">
+        <button class="btn btn--gold btn--big" style="flex:1 1 0" type="button"
+                onclick="startFullRound()">סבב מלא · 20 קלפים</button>
+        <button class="btn btn--big" style="flex:1 1 0" type="button"
+                onclick="startShortRound()">סבב קצר · 10 קלפים</button>
+      </div>
+      <div class="panel">
+        <h2 class="h2" id="menu-story-title">המגילה</h2>
+        <div class="scrollbar">
+          <span class="rod" aria-hidden="true"></span>
+          <div class="segs" id="menu-scroll-segs"></div>
+          <span class="rod" aria-hidden="true"></span>
+        </div>
+        <p class="lead" id="menu-progress"></p>
+      </div>
+      <div class="panel">
+        <p class="lead" id="menu-teams-line"></p>
+        <div class="row">
+          <button class="btn btn--ghost" type="button" onclick="goTeams()">הצוותים</button>
+          <button class="btn btn--ghost" type="button" onclick="goRoster()">עריכת ההרכב</button>
+          <button class="btn btn--danger" type="button" onclick="askWipe()">משפחה חדשה · מחיקה</button>
+        </div>
+      </div>
+      <div class="panel panel--warn" id="menu-wipe" hidden>
+        <h2 class="h2">למחוק את הכל?</h2>
+        <p class="lead">הפעולה הזו תמחק לגמרי:</p>
+        <ul id="menu-wipe-list"></ul>
+        <p class="lead">אין דרך לשחזר. המשחק יחזור למסך ההרכב הריק.</p>
+        <div class="row row--end">
+          <button class="btn btn--ghost" type="button" onclick="cancelWipe()">לא, חוזרים</button>
+          <button class="btn btn--no" type="button" onclick="confirmWipe()">כן, מוחקים הכל</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 4. מסך משחק ================================================ -->
+  <section class="screen" id="game-screen">
+    <div class="scrollbar" id="scroll-bar">
+      <span class="rod" aria-hidden="true"></span>
+      <div class="segs" id="scroll-segs"></div>
+      <span class="rod" aria-hidden="true"></span>
+    </div>
+    <div class="board" id="scoreboard"></div>
+    <div class="card" id="card">
+      <div class="card__top">
+        <span class="stamp" id="card-stamp" aria-hidden="true"></span>
+        <span class="card__deck" id="card-deck"></span>
+        <button class="star" id="secret-btn" type="button" hidden
+                onclick="toggleSecret()">מסתירים שוב</button>
+        <button class="star" id="star-btn" type="button" aria-pressed="false"
+                onclick="toggleStar()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path
+            d="M12 3.2l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-3-5.3 3 1.1-6L3.4 9.5l6-.8z"
+            stroke-linejoin="round"/></svg>
+          <span>רגע לאלבום</span>
+        </button>
+      </div>
+      <div class="roles" id="card-roles" hidden></div>
+      <div class="card__body" id="card-body">
+        <p class="card__text" id="card-text"></p>
+        <div class="shroud" id="card-shroud" hidden>
+          <div class="shroud__t">קחו את הטאבלט הצידה</div>
+          <div class="shroud__s">הקלף הזה נראה רק לצוות שבתור. שאר השולחן לא אמור
+            לראות אותו — הניחוש הוא כל העניין.</div>
+          <button class="btn btn--gold btn--big" type="button" onclick="toggleSecret()">גלו לנו</button>
+        </div>
+      </div>
+      <div class="card__foot">
+        <span class="aud" id="card-audience"></span>
+        <div class="timer" id="card-timer" hidden>
+          <div class="timer__ring" id="timer-ring">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <circle class="timer__track" cx="50" cy="50" r="44"></circle>
+              <circle class="timer__arc" id="timer-arc" cx="50" cy="50" r="44"></circle>
+            </svg>
+            <div class="timer__digits" id="timer-digits">0</div>
+          </div>
+          <button class="btn" id="timer-btn" type="button" onclick="toggleTimer()">מתחילים לספור</button>
+        </div>
+      </div>
+    </div>
+    <div class="actions" id="card-actions"></div>
+    <div class="foot">
+      <span id="game-progress"></span>
+      <button class="btn btn--ghost" type="button" onclick="pauseRound()">הפסקה</button>
+    </div>
+  </section>
+
+  <!-- ===== 5. מסך סיכום =============================================== -->
+  <section class="screen" id="summary-screen">
+    <h1 class="h1">סוף הסבב</h1>
+    <div class="summary">
+      <div class="winner" id="summary-winner"></div>
+      <div class="summary__cols">
+        <div class="summary__col">
+          <h2 class="h2">הניקוד</h2>
+          <div class="table" id="summary-table"></div>
+          <h2 class="h2">המגילה</h2>
+          <div class="scrollbar">
+            <span class="rod" aria-hidden="true"></span>
+            <div class="segs" id="summary-scroll-segs"></div>
+            <span class="rod" aria-hidden="true"></span>
+          </div>
+          <p class="lead" id="summary-progress"></p>
+        </div>
+        <div class="summary__col">
+          <h2 class="h2">הרגעים שסימנתם</h2>
+          <ul class="stars" id="summary-stars"></ul>
+        </div>
+      </div>
+      <div class="row row--end">
+        <button class="btn btn--ghost" type="button" onclick="goMenu()">סיימנו להיום</button>
+        <button class="btn btn--gold btn--big" type="button" onclick="anotherRound()">סבב נוסף</button>
+      </div>
+    </div>
+  </section>
+
+  </main>
+
+  <!-- חשיפת קטע מגילה — משתלטת על כל המסך -->
+  <div class="overlay" id="segment-overlay" hidden>
+    <div class="overlay__panel">
+      <div class="overlay__kicker" id="segment-kicker"></div>
+      <h2 class="overlay__title" id="segment-title"></h2>
+      <div class="overlay__body">
+        <p class="overlay__text" id="segment-text"></p>
+        <div class="adults">
+          <div class="adults__h">לבוגרים שבחבורה</div>
+          <div class="adults__t" id="segment-adults"></div>
+        </div>
+      </div>
+      <div class="row row--end">
+        <button class="btn btn--gold btn--big" type="button" onclick="closeSegment()">ממשיכים</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const STORAGE_KEY = 'kesher_mishpachti_v1';
+window.KESHER = {};
+// כינוי מקומי יחיד ל-window.KESHER: בדפדפן זה מיותר (הגלובליים מתלכדים),
+// אבל סביבת הבדיקות (_test-kesher.js) מריצה את הקוד בתוך vm sandbox שבו
+// window הוא אובייקט רגיל ולא המקור לגלובל — בלעדיו KESHER.foo = ... היה נכשל שם.
+const KESHER = window.KESHER;
+
+/* --- חלק 1: חלוקה לצוותים ----------------------------------------------
+   ממיינים לפי גיל ומזווגים צעיר↔בוגר כדי למקסם את הפער בתוך כל צוות.
+   זה הלב של המשחק: הפער בין בן 8 לבן 21 הוא נכס ולא מכשול. */
+KESHER.MIN_PLAYERS = 4;
+KESHER.MAX_TEAMS = 4;
+
+KESHER.formTeams = function(players){
+  if (!Array.isArray(players) || players.length < KESHER.MIN_PLAYERS){
+    throw new Error('צריך לפחות ' + KESHER.MIN_PLAYERS + ' משתתפים');
+  }
+  const sorted = players.slice().sort((a,b) => a.age - b.age);
+  const count = Math.min(KESHER.MAX_TEAMS, Math.floor(sorted.length / 2));
+  const teams = [];
+  for (let i = 0; i < count; i++) teams.push({ id:i+1, members:[], score:0 });
+
+  // גדלי מטרה לכל צוות: ההפרש בין הגדול לקטן לא יעלה על 1 בשום מקרה
+  // (base = חלוקה שווה, rem צוותים מקבלים חבר אחד נוסף)
+  const base = Math.floor(sorted.length / count);
+  const rem = sorted.length % count;
+  const need = [];
+  for (let i = 0; i < count; i++) need.push(base + (i < rem ? 1 : 0));
+
+  // שיבוץ מקצוות הרשימה פנימה: הצעיר ביותר עם הבוגר ביותר.
+  // כשיש עוד צוותים עם מקום לזוג שלם (need>=2) מחלקים אליהם זוג-זוג בתורות;
+  // כשנשארו רק צוותים שחסר להם חבר בודד (need===1), מפצלים את הזוג הבא בין
+  // שניים מהם כדי לא לחרוג מהגודל הדרוש (זה מה שמשאיר את הפער <= 1).
+  let lo = 0, hi = sorted.length - 1, i = 0;
+  const findWithCapacity = (start, min) => {
+    for (let k = 0; k < count; k++){
+      const idx = (start + k) % count;
+      if (need[idx] >= min) return idx;
+    }
+    return -1;
+  };
+  while (lo < hi){
+    const t = findWithCapacity(i % count, 2);
+    if (t !== -1){
+      teams[t].members.push(sorted[lo++]);
+      teams[t].members.push(sorted[hi--]);
+      need[t] -= 2;
+      i = t + 1;
+    } else {
+      const t1 = findWithCapacity(i % count, 1);
+      teams[t1].members.push(sorted[lo++]);
+      need[t1] -= 1;
+      const t2 = findWithCapacity(t1 + 1, 1);
+      teams[t2].members.push(sorted[hi--]);
+      need[t2] -= 1;
+      i = t2 + 1;
+    }
+  }
+  if (lo === hi){
+    const t = findWithCapacity(0, 1);
+    teams[t].members.push(sorted[lo]);
+  }
+  // ממיינים כל צוות מצעיר לבוגר
+  teams.forEach(t => t.members.sort((a,b) => a.age - b.age));
+  return teams;
+};
+
+/* --- חלק 2: חפיסות ותוכן ----------------------------------------------- */
+KESHER.DECKS = {
+  memories:   { name:'זיכרונות משפחתיים', stamp:'scroll' },
+  humor:      { name:'ההומור שלנו',       stamp:'mask'   },
+  whoknows:   { name:'מי מכיר את מי',      stamp:'eye'    },
+  challenges: { name:'אתגרים ומשימות',     stamp:'flame'  }
+};
+
+KESHER.CARDS = [
+  // --- זיכרונות משפחתיים (1-10) — הרגש מגיע דרך סיפור, לא דרך הצהרה
+  { id:1,  deck:'memories', text:'ספרו על פעם שנתקעתם יחד במקום שלא תכננתם.' },
+  { id:2,  deck:'memories', text:'ספרו על הפעם שהכי צחקתם בטיול משפחתי.' },
+  { id:3,  deck:'memories', text:'ספרו על פעם שאחד מכם הציל את השני ממצב מביך.' },
+  { id:4,  deck:'memories', text:'מה הדבר הראשון שאתם זוכרים מהבית הקודם?' },
+  { id:5,  deck:'memories', text:'ספרו על ארוחה אחת שהמשפחה לא מפסיקה להזכיר.' },
+  { id:6,  deck:'memories', text:'ספרו על יום שבו משהו השתבש — והיום זה מצחיק.' },
+  { id:7,  deck:'memories', text:'הצעיר שואל: איך נראה היה ערב רגיל אצלנו לפני עשר שנים? הבוגר עונה.' },
+  { id:8,  deck:'memories', text:'ספרו על מתנה שקיבלתם וזוכרים עד היום.' },
+  { id:9,  deck:'memories', text:'ספרו על פעם שפחדתם — וגיליתם שלא היה ממה.' },
+  { id:10, deck:'memories', text:'מה המסורת הקטנה והמוזרה ביותר של המשפחה שלנו?' },
+
+  // --- ההומור שלנו (11-20) — חלקם סודיים: הקהל לא אמור לראות
+  { id:11, deck:'humor', text:'הצעיר מחקה בן משפחה בלי לומר את שמו. הקהל מנחש את מי.' },
+  { id:12, deck:'humor', text:'הבוגר מחקה איך אבא עונה לטלפון. הצעיר מנחש מה מצחיק בה.' },
+  { id:13, deck:'humor', text:'הבוגר אומר משפט שבן משפחה אומר כל יום. הקהל מנחש מי.' },
+  { id:14, deck:'humor', text:'הצעיר מחקה איך המשפחה נראית בבוקר של יום ראשון. הבוגר מנחש מי.' },
+  { id:15, deck:'humor', text:'הבוגר משחק סצנה של המשפחה נתקעת בפקק. הצעיר מנחש מה קרה.' },
+  { id:16, deck:'humor', text:'הצעיר מחקה בן משפחה מנסה להפעיל מכשיר חדש. הבוגר מנחש איזה מכשיר.' },
+  { id:17, deck:'humor', text:'הבוגר ממציא פרסומת לחטיף הכי פופולרי בבית. הקהל מצביע אם נקנה.' },
+  { id:18, deck:'humor', text:'הצעיר מחקה את תגובת אמא כשמישהו שוכח לכבות אור. הבוגר מנחש מה קרה.' },
+  { id:19, deck:'humor', text:'שחקו ויכוח משפחתי על מה רואים בטלוויזיה — בלי מילים.' },
+  { id:20, deck:'humor', text:'הבוגר מחקה בן משפחה אוכל מאכל שהוא הכי שונא. הצעיר מנחש מי ומה.' },
+
+  // --- מי מכיר את מי (21-30) — כל הקהל מצביע ואז נחשף
+  { id:21, deck:'whoknows', text:'מי במשפחה הכי סביר שיאחר? כולם מצביעים.' },
+  { id:22, deck:'whoknows', text:'מי הכי סביר שיזכור יום הולדת של כולם?' },
+  { id:23, deck:'whoknows', text:'מי הכי סביר שיתחיל לשיר באמצע הארוחה?' },
+  { id:24, deck:'whoknows', text:'מי הכי סביר שייקח את המנה האחרונה?' },
+  { id:25, deck:'whoknows', text:'מי הכי סביר שיתלבש הכי מהר בבוקר?' },
+  { id:26, deck:'whoknows', text:'מי הכי סביר שיירדם ראשון מול סרט?' },
+  { id:27, deck:'whoknows', text:'מי הכי סביר לארגן את כולם לתמונה?' },
+  { id:28, deck:'whoknows', text:'מי הכי סביר שיאבד את הטלפון בתוך הבית?' },
+  { id:29, deck:'whoknows', text:'מי הכי סביר שיגיד "רק עוד חמש דקות"?' },
+  { id:30, deck:'whoknows', text:'מי הכי סביר לזכור בדיוק מה קרה לפני שבע שנים?' },
+
+  // --- אתגרים ומשימות (31-40) — הקהל שופט אם הצליחו
+  { id:31, deck:'challenges', text:'הצעיר מצייר חפץ מהבית. הבוגר מנחש תוך דקה.' },
+  { id:32, deck:'challenges', text:'הבוגר מסביר מילה בלי להשתמש בה ובלי תנועות ידיים. הצעיר מנחש תוך דקה.' },
+  { id:33, deck:'challenges', text:'בנו מגדל מכל מה שיש על השולחן, בלי להפיל.' },
+  { id:34, deck:'challenges', text:'ספרו סיפור לסירוגין — מילה אחת כל אחד, בלי לעצור ובלי לחשוב יותר משתי שניות.' },
+  { id:35, deck:'challenges', text:'מצאו שלושה דברים משותפים לשניכם תוך דקה.' },
+  { id:36, deck:'challenges', text:'הבוגר מתאר מקום, הצעיר מצייר אותו בעיניים עצומות. הקהל מצביע אם הציור תואם.' },
+  { id:37, deck:'challenges', text:'הצעיר מהמהם שיר שכולם מכירים, בלי מילים. הבוגר מנחש איזה שיר.' },
+  { id:38, deck:'challenges', text:'אמרו עשר מילים ברצף שמתחילות באותה אות, בלי לעצור ובלי לחזור על מילה.' },
+  { id:39, deck:'challenges', text:'הצעיר נותן הוראות, הבוגר מקפל נייר בלי להסתכל. הקהל מצביע אם הקיפול תואם להוראות.' },
+  { id:40, deck:'challenges', text:'המציאו יחד כלל חדש לבית. הקהל מצביע אם לאמץ.' }
+];
+
+KESHER.CARD_META = {
+  1: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  2: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  3: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  4: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  5: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'evergreen'},
+  6: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  7: {roles:'young-asks',audience:'watch', scoring:null,  secret:false, minYoungAge:10, durationSec:0,  replayPolicy:'discovery'},
+  8: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  9: {roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'discovery'},
+  10:{roles:'together',  audience:'watch', scoring:null,  secret:false, minYoungAge:8,  durationSec:0,  replayPolicy:'evergreen'},
+
+  11:{roles:'young-acts',audience:'guess', scoring:'guess', secret:true,  minYoungAge:8,  durationSec:60, replayPolicy:'evergreen'},
+  12:{roles:'older-acts',audience:'guess', scoring:'guess', secret:false, minYoungAge:8,  durationSec:45, replayPolicy:'evergreen'},
+  13:{roles:'older-acts',audience:'guess', scoring:'guess', secret:true,  minYoungAge:8,  durationSec:45, replayPolicy:'evergreen'},
+  14:{roles:'young-acts',audience:'guess', scoring:'guess', secret:false, minYoungAge:8,  durationSec:60, replayPolicy:'evergreen'},
+  15:{roles:'older-acts',audience:'guess', scoring:'guess', secret:false, minYoungAge:8,  durationSec:90, replayPolicy:'evergreen'},
+  16:{roles:'young-acts',audience:'guess', scoring:'guess', secret:true,  minYoungAge:8,  durationSec:60, replayPolicy:'evergreen'},
+  17:{roles:'older-acts',audience:'vote',  scoring:'vote',  secret:false, minYoungAge:10, durationSec:90, replayPolicy:'evergreen'},
+  18:{roles:'young-acts',audience:'guess', scoring:'guess', secret:false, minYoungAge:8,  durationSec:45, replayPolicy:'evergreen'},
+  19:{roles:'together',  audience:'judge', scoring:'vote',  secret:false, minYoungAge:8,  durationSec:90, replayPolicy:'evergreen'},
+  20:{roles:'older-acts',audience:'guess', scoring:'guess', secret:true,  minYoungAge:8,  durationSec:45, replayPolicy:'evergreen'},
+
+  21:{roles:'together',audience:'vote', scoring:'vote', secret:false, minYoungAge:8, durationSec:0, replayPolicy:'evergreen'},
+  22:{roles:'together',audience:'vote', scoring:'vote', secret:false, minYoungAge:8, durationSec:0, replayPolicy:'evergreen'},
+  23:{roles:'together',audience:'vote', scoring:'vote', secret:false, minYoungAge:8, durationSec:0, replayPolicy:'evergreen'},
+  24:{roles:'together',audience:'vote', scoring:'vote', secret:false, minYoungAge:8, durationSec:0, replayPolicy:'evergreen'},
+  25:{roles:'together',audience:'vote', scoring:'vote', secret:false, minYoungAge:10,durationSec:0, replayPolicy:'evergreen'},
+  26:{roles:'together',audience:'vote', scoring:'vote', secret:false, minYoungAge:8, durationSec:0, replayPolicy:'evergreen'},
+  27:{roles:'together',audience:'vote', scoring:'vote', secret:false, minYoungAge:8, durationSec:0, replayPolicy:'evergreen'},
+  28:{roles:'together',audience:'vote', scoring:'vote', secret:false, minYoungAge:8, durationSec:0, replayPolicy:'evergreen'},
+  29:{roles:'together',audience:'vote', scoring:'vote', secret:false, minYoungAge:8, durationSec:0, replayPolicy:'evergreen'},
+  30:{roles:'together',audience:'vote', scoring:'vote', secret:false, minYoungAge:10,durationSec:0, replayPolicy:'evergreen'},
+
+  31:{roles:'young-acts',audience:'judge',scoring:'vote', secret:true,  minYoungAge:8, durationSec:60, replayPolicy:'evergreen'},
+  32:{roles:'older-acts',audience:'guess',scoring:'guess',secret:true,  minYoungAge:10,durationSec:60, replayPolicy:'evergreen'},
+  33:{roles:'together',  audience:'judge',scoring:'vote', secret:false, minYoungAge:8, durationSec:90, replayPolicy:'evergreen'},
+  34:{roles:'together',  audience:'judge',scoring:'vote', secret:false, minYoungAge:8, durationSec:90, replayPolicy:'evergreen'},
+  35:{roles:'together',  audience:'judge',scoring:'vote', secret:false, minYoungAge:8, durationSec:60, replayPolicy:'evergreen'},
+  36:{roles:'older-acts',audience:'judge',scoring:'vote', secret:false, minYoungAge:8, durationSec:90, replayPolicy:'evergreen'},
+  37:{roles:'young-acts', audience:'guess',scoring:'guess',secret:true,  minYoungAge:8, durationSec:60, replayPolicy:'evergreen'},
+  38:{roles:'together',  audience:'judge',scoring:'vote', secret:false, minYoungAge:10,durationSec:45, replayPolicy:'evergreen'},
+  39:{roles:'young-acts',audience:'judge',scoring:'vote', secret:false, minYoungAge:8, durationSec:90, replayPolicy:'evergreen'},
+  40:{roles:'together',  audience:'vote', scoring:'vote', secret:false, minYoungAge:10,durationSec:60, replayPolicy:'evergreen'}
+};
+
+/* --- חלק 4א: בניית סבב --------------------------------------------------
+   שתי דרישות מתנגשות: גיוון תוכן מול הוגנות ניקוד. הניקוד מנצח — צוות
+   שקיבל שלושה קלפי זיכרון ברצף מפסיד בלי קשר לביצועיו.
+
+   תיקון לעומת הדוגמה בבריף: הדוגמה מחלקת עם אינדקס מחזורי i שמתעדכן
+   בתוך הלולאה (i = i + k + 1) — כשצוות נדלג עליו מסיבת גיל, הקפיצה
+   משתנה לפי כמה דילוגים קרו, וההטיה מצטברת ואינה הוגנת באמת (לא ניתן
+   להבטיח ±1 על פני הרצות רבות). בנוסף, קלף שאין לו צוות מתאים מסיבת
+   גיל "נשמט" בשקט (continue) — קלף נספר כ"זמין" אך לא נכנס לסבב, מה
+   שסותר את 'גודל הסבב' וגם מקטין בשקט את מספר קלפי הניקוד.
+
+   הפתרון: שיבוץ גרידי לפי עומס — בכל קלף בוחרים את הצוות הזמין (עומד
+   בתנאי הגיל) עם הכי מעט תורות שהוקצו לו כבר (שובר שוויון: הכי מעט
+   קלפי ניקוד, אחר כך סדר אקראי). זה מבטיח הפרש ±1 תמיד, בלי תלות
+   במספר הדילוגים.
+
+   קלף שאף צוות לא עומד בתנאי הגיל שלו (minYoungAge גבוה מהצעיר בכל
+   צוות) לא מוקצה לאף אחד — הוא מסונן מהמאגר *לפני* הבחירה, כפי שדורש
+   המפרט: "המנוע מדלג על קלף כזה... ושולף אחר במקומו". כך הקצאה
+   לכל-מי-שנבחר תמיד כשירה, ואין צורך בנתיב גיבוי שמכניס קלף לצוות לא
+   מתאים. אם אחרי הסינון נשארו פחות קלפים מ-size, מוחזר סבב קצר יותר —
+   סבב קצר הוא כן; קלף לא מתאים הוא לא. */
+function shuffle(a){
+  const r = a.slice();
+  for (let i = r.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = r[i]; r[i] = r[j]; r[j] = t;
+  }
+  return r;
+}
+
+KESHER.buildRound = function(teams, size, cardStatus){
+  cardStatus = cardStatus || {};
+  const youngestOf = {};
+  teams.forEach(t => { youngestOf[t.id] = t.members[0].age; });
+  // הגיל הכי גבוה מבין "הצעיר של הצוות" בכל הצוותים — קלף שדורש יותר
+  // מזה לא כשיר לאף צוות, ולכן מסונן מהמאגר כליל (ולא מגיע לשיבוץ).
+  const maxYoungestAge = Math.max(...teams.map(t => youngestOf[t.id]));
+
+  const available = KESHER.CARDS.filter(c => {
+    const m = KESHER.CARD_META[c.id];
+    if (m.replayPolicy === 'discovery' && cardStatus[c.id] === 'done') return false;
+    if (m.minYoungAge > maxYoungestAge) return false;
+    return true;
+  });
+
+  // --- תיקון הוגנות: לא כל מי ש"כשיר" כשיר באותה מידה. קלף עם minYoungAge
+  // גבוה מהצעיר של *חלק* מהצוותים (אך לא כולם) כשיר רק לתת-קבוצה — וכשרוב
+  // הקלפים האלה מנקדים, אותה תת-קבוצה צוברת הזדמנויות ניקוד נוספות בלי
+  // קשר לביצועים. לכן מעדיפים למלא את הסבב מתוך קלפים "אוניברסליים"
+  // (minYoungAge שעומד בו *כל* צוות) ופונים לקלפים "מוגבלים" רק כשהמאגר
+  // האוניברסלי לא מספיק. מתוך המוגבלים, מעדיפים קלפים שאינם מנקדים —
+  // כך חוסר האיזון שלא ניתן למנוע נופל על תורות ולא על נקודות.
+  const minYoungest = Math.min(...teams.map(t => youngestOf[t.id]));
+  const isUniversal = c => KESHER.CARD_META[c.id].minYoungAge <= minYoungest;
+
+  const universal = available.filter(isUniversal);
+  const restricted = available.filter(c => !isUniversal(c));
+
+  const universalScoring  = shuffle(universal.filter(c => KESHER.CARD_META[c.id].scoring));
+  const universalPlain    = shuffle(universal.filter(c => !KESHER.CARD_META[c.id].scoring));
+  // בתוך המוגבלים: קלפים לא-מנקדים קודם (כך שאם צריך למלא עם מוגבלים,
+  // עדיפות לא-מנקד כדי שחוסר האיזון יפול על תורות ולא על נקודות).
+  const restrictedPlain   = shuffle(restricted.filter(c => !KESHER.CARD_META[c.id].scoring));
+  const restrictedScoring = shuffle(restricted.filter(c => KESHER.CARD_META[c.id].scoring));
+
+  // כמה מנקדים בסך הכול: שני שלישים מהסבב, אבל לא יותר מהזמין (אוניברסלי+מוגבל)
+  const totalScoringAvail = universalScoring.length + restrictedScoring.length;
+  const totalPlainAvail   = universalPlain.length + restrictedPlain.length;
+  const wantScoring = Math.min(totalScoringAvail, Math.round(size * 0.65));
+  const wantPlain   = Math.min(totalPlainAvail, size - wantScoring);
+
+  // מילוי מנקדים: קודם אוניברסליים, מוגבלים רק אם המאגר האוניברסלי לא מספיק.
+  const pickedScoring = universalScoring.slice(0, wantScoring)
+    .concat(restrictedScoring.slice(0, Math.max(0, wantScoring - universalScoring.length)));
+  // מילוי לא-מנקדים: קודם מוגבלים (לנצל אותם כשאינם פוגעים בניקוד),
+  // ואז אוניברסליים להשלמת הכמות — כך קלפי minYoungAge גבוה שאינם מנקדים
+  // "נספגים" בלי להטות את הניקוד, והאוניברסליים שנשארו פנויים לניקוד בעתיד.
+  const pickedPlain = restrictedPlain.slice(0, wantPlain)
+    .concat(universalPlain.slice(0, Math.max(0, wantPlain - restrictedPlain.length)));
+
+  const picked = pickedScoring.concat(pickedPlain);
+  const turns = [];
+
+  // מעקב עומס לכל צוות: סך תורות, וסך קלפי ניקוד — שני המונים נשמרים
+  // ביחד כדי שגם 'תורות מתחלקים שווה' וגם 'הזדמנויות ניקוד שוות' יתקיימו.
+  const turnsOf = {}, scoringOf = {};
+  teams.forEach(t => { turnsOf[t.id] = 0; scoringOf[t.id] = 0; });
+
+  function deal(cards, isScoring){
+    for (const c of cards){
+      const m = KESHER.CARD_META[c.id];
+      // תמיד יש לפחות צוות כשיר אחד — הקלף סונן מהמאגר אחרת.
+      const eligible = teams.filter(t => youngestOf[t.id] >= m.minYoungAge);
+      // בוחרים מתוך הכשירים את הצוות עם הכי פחות עומס רלוונטי
+      // (שובר שוויון: הכי פחות תורות בסך הכול).
+      let best = eligible[0];
+      for (const t of eligible){
+        const tBusy = isScoring ? scoringOf[t.id] : turnsOf[t.id];
+        const bBusy = isScoring ? scoringOf[best.id] : turnsOf[best.id];
+        if (tBusy < bBusy || (tBusy === bBusy && turnsOf[t.id] < turnsOf[best.id])){
+          best = t;
+        }
+      }
+      turns.push({ cardId:c.id, teamId:best.id });
+      turnsOf[best.id]++;
+      if (isScoring) scoringOf[best.id]++;
+    }
+  }
+  deal(picked.filter(c => KESHER.CARD_META[c.id].scoring), true);
+  deal(picked.filter(c => !KESHER.CARD_META[c.id].scoring), false);
+
+  return shuffle(turns).slice(0, size);
+};
+
+/* --- חלק 3: עלילת רקע — מגילת אנטיוכוס ---------------------------------
+   טקסט אמיתי. נקרא עד היום בבתי כנסת בנוסח תימן בשבת חנוכה.
+   הניסוח לילדים הוא שלנו; העלילה נאמנה למגילה.
+   אסור להציג אותה כהיסטוריה — יש בה שיבושים מוכרים, והתיארוך שנוי במחלוקת. */
+KESHER.STORY = {
+  id: 'megillat-antiochus',
+  title: 'המגילה שנשכחה',
+  source: 'מגילת אנטיוכוס — מגילה ארמית עתיקה על סיפור חנוכה',
+  note: 'מגילה עתיקה בת אלף שנה לפחות. נקראת עד היום בבתי כנסת בנוסח תימן ' +
+        'בשבת חנוכה, ומופיעה כנספח בחלק מהסידורים. אינה ספר היסטוריה — ' +
+        'יש בה פרטים שאינם מתיישבים עם ספר מקבים, וזה חלק מהעניין.',
+  segments: [
+    { n:1, threshold:0, title:'הגזרות',
+      text:'אנטיוכוס, מלך יוון, שלח את שר צבאו ניקנור אל ירושלים. הוא אמר על ' +
+           'היהודים: העם הזה שומר שבת וראש חודש ומילה, ומחכה למלך שימלוך על כל הארצות.',
+      forAdults:'המגילה פותחת דווקא בשלוש המצוות האלה — שבת, ראש חודש ומילה. ' +
+                'אלה בדיוק הגזרות שספר מקבים מתאר.' },
+
+    { n:2, threshold:3, title:'החזיר במקדש',
+      text:'ניקנור הגיע לירושלים, בנה מזבח בבית המקדש, ושחט עליו חזיר. ' +
+           'את דמו הוא הביא אל תוך קודש הקודשים.',
+      forAdults:'זו נקודת האל-חזור של הסיפור: לא רק גזרה על העם, אלא חילול ' +
+                'המקום עצמו.' },
+
+    { n:3, threshold:7, title:'החרב תחת הגלימה',
+      text:'יוחנן בן מתתיהו, הכהן הגדול, שמע מה קרה. הוא החביא חרב קצרה מתחת ' +
+           'לבגדיו וביקש להיפגש עם ניקנור.',
+      forAdults:'שימו לב מי הגיבור כאן — יוחנן, ולא יהודה המכבי. במגילה הזו ' +
+                'יהודה כמעט אינו מופיע בתחילת הסיפור.' },
+
+    { n:4, threshold:12, title:'הפגישה',
+      text:'ניקנור דרש מיוחנן להקריב חזיר ולקבל בתמורה כבוד מלכות. יוחנן העמיד ' +
+           'פנים שהוא מסכים, וביקש שיפנו את החדר מאנשים — ואז הרג אותו.',
+      forAdults:'תחבולה, לא קרב גלוי. המגילה אינה מתביישת בזה.' },
+
+    { n:5, threshold:18, title:'המצבה ששמה מקבי',
+      text:'יוחנן יצא לקרב ונלחם. אחר כך הוא בנה מצבה וקרא לה "מקבי" — ' +
+           'כלומר, ממית החזקים.',
+      forAdults:'כאן המגילה נותנת את המקור לשם "מכבי". זה הסבר שהמגילה מציעה; ' +
+                'יש חוקרים שמציעים הסברים אחרים לגמרי.' },
+
+    { n:6, threshold:25, title:'המערה',
+      text:'שר יווני בשם בגריס גזר גזרות חדשות. יהודים הסתתרו במערה כדי לשמור ' +
+           'שבת בשקט. הוא דרש שייצאו, והם סירבו — כי זו שבת. הם לא יצאו, ולא שרדו.',
+      forAdults:'ספר מקבים מספר את אותו סיפור, ומוסיף את מה שקרה אחריו: ' +
+                'מתתיהו וחבריו החליטו שמעתה נילחם גם בשבת. זהו המקור לדין ' +
+                'פיקוח נפש במלחמה.' },
+
+    { n:7, threshold:33, title:'הברכות',
+      text:'חמשת בני מתתיהו יצאו לקרב. אביהם בירך כל אחד מהם, והשווה אותו ' +
+           'לגיבור מן התנ"ך: את יהודה ליהודה בן יעקב, את שמעון לשמעון, ' +
+           'את יוחנן לאבנר, את יונתן ליונתן בן שאול, ואת אלעזר לפינחס.',
+      forAdults:'כל ברכה היא רמז לסיפור מקראי אחר. שווה לבדוק בבית למה דווקא ' +
+                'ההשוואות האלה.' },
+
+    { n:8, threshold:42, title:'מצפה גלעד',
+      text:'בגריס חזר, והפעם הביא איתו פילי מלחמה. האחים הלכו למצפה גלעד, ' +
+           'גזרו תענית, ישבו על האפר והתפללו לפני הקרב.',
+      forAdults:'פילי מלחמה היו הטנקים של התקופה. הצבא הסלאוקי אכן השתמש בהם.' },
+
+    { n:9, threshold:52, title:'אלעזר והפיל',
+      text:'בקרב נפל יהודה. אלעזר ראה פיל גדול מכל השאר, רץ בין חיילי האויב, ' +
+           'הגיע עד הפיל, כרע תחתיו ודקר אותו. הפיל נפל עליו. אחיו חיפשו אותו ' +
+           'בין החיים ובין המתים עד שמצאו אותו.',
+      forAdults:'שתי הפתעות: ראשית, במגילה הזו יהודה נהרג — הפוך מספר מקבים, ' +
+                'שבו מתתיהו מת ראשון. שנית, הנוסח הארמי אומר שאלעזר טבע ' +
+                'בגללי הפיל. זה כתוב שם ממש.' },
+
+    { n:10, threshold:62, title:'פך השמן',
+      text:'כשחזרו וטיהרו את המקדש, מצאו פך שמן אחד שעדיין היה חתום בחותם ' +
+           'הכהן הגדול. היה בו שמן ליום אחד בלבד — והוא דלק שמונה ימים. ' +
+           'מאז קבעו שמונה ימי חג.',
+      forAdults:'נס פך השמן אינו מופיע בספר מקבים כלל. המקור הקדום ביותר לחנוכה, ' +
+                'מגילת תענית, הוא משפט אחד — ואין בו שמן. הסיפור מופיע ' +
+                'בתלמוד, שבת כ"א ע"ב.' }
+  ]
+};
+
+KESHER.unlockedSegments = function(familyScore){
+  return KESHER.STORY.segments.filter(s => familyScore >= s.threshold);
+};
+
+/* =======================================================================
+   חלק 5: הממשק
+   מכאן והלאה — צרכן בלבד. אין נגיעה ב-formTeams / DECKS / CARDS /
+   CARD_META / buildRound / STORY / unlockedSegments.
+   הקוד כאן אינו רץ בסביבת הבדיקות: boot() נקרא רק כשיש DOM אמיתי
+   (ראו הסוף), ולכן אפשר להריץ את כל הסקריפט ב-vm בלי תופעות לוואי.
+   ======================================================================= */
+
+const el = id => document.getElementById(id);
+
+const SCREEN_IDS = ['roster-screen','teams-screen','menu-screen','game-screen','summary-screen'];
+const MAX_PLAYERS = 12;
+
+// תוויות מדויקות — הניסוח נקבע במפרט ואינו משתנה
+const AUDIENCE_LABEL = {
+  guess: 'כולם מנחשים',
+  vote:  'כולם מצביעים',
+  judge: 'הקהל שופט',
+  watch: 'מקשיבים'
+};
+const ROLE_CANON = {
+  'young-acts': 'הצעיר מבצע · הבוגר מנחש',
+  'older-acts': 'הבוגר מבצע · הצעיר מנחש',
+  'young-asks': 'הצעיר שואל · הבוגר עונה'
+};
+
+// מצב המשחק שנשמר. S מוחלף כליל במחיקה, ולכן let.
+let S = {
+  players: [],       // [{name, age}]
+  teams: [],         // תוצאת formTeams + score מתעדכן
+  cardStatus: {},    // {[id]:'done'}
+  starred: [],       // [{cardId, deck, team}]
+  familyScore: 0,    // סכום נקודות כל הצוותים, מצטבר בין ערבים — זה מניע את המגילה
+  shownSegments: [], // מספרי קטעים שכבר הוצגו, כדי לא להציג פעמיים
+  round: null        // {turns:[{cardId,teamId}], idx, size}
+};
+
+// מצב רגעי שאינו נשמר. secretShown מתאפס בכוונה בכל טעינה:
+// אחרי רענון הקלף הסודי חוזר להיות מוסתר.
+const UI = { secretShown:false, segQueue:[], timer:null, timerLeft:0, timerTotal:0, timerEnd:0, audio:null };
+
+/* --- שמירה ושחזור ------------------------------------------------------
+   מפתח אחד בלבד: STORAGE_KEY. כל כתיבה עוברת דרך save(). */
+function save(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S)); }
+  catch(e){ /* אחסון חסום (גלישה פרטית) — המשחק ממשיך, פשוט בלי שמירה */ }
+}
+
+function validPlayer(p){
+  return p && typeof p.name === 'string' && p.name.trim().length > 0 &&
+         typeof p.age === 'number' && p.age >= 3 && p.age <= 120;
+}
+
+function validTeams(ts){
+  return Array.isArray(ts) && ts.every(t => t && typeof t.id === 'number' &&
+    Array.isArray(t.members) && t.members.length > 0 && t.members.every(validPlayer));
+}
+
+function validRound(r){
+  if (!r || !Array.isArray(r.turns) || !r.turns.length) return false;
+  if (typeof r.idx !== 'number' || r.idx < 0 || r.idx > r.turns.length) return false;
+  return r.turns.every(t => t && KESHER.CARD_META[t.cardId] && typeof t.teamId === 'number');
+}
+
+function load(){
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(e){ d = null; }
+  if (!d || typeof d !== 'object') return;
+  S.players      = Array.isArray(d.players) ? d.players.filter(validPlayer).slice(0, MAX_PLAYERS) : [];
+  S.teams        = validTeams(d.teams) ? d.teams.map(t => ({ id:t.id, members:t.members, score:Number(t.score)||0 })) : [];
+  S.cardStatus   = (d.cardStatus && typeof d.cardStatus === 'object') ? d.cardStatus : {};
+  S.starred      = Array.isArray(d.starred) ? d.starred.filter(s => s && KESHER.CARD_META[s.cardId]) : [];
+  S.familyScore  = (typeof d.familyScore === 'number' && d.familyScore >= 0) ? Math.floor(d.familyScore) : 0;
+  S.shownSegments= Array.isArray(d.shownSegments) ? d.shownSegments.filter(n => typeof n === 'number') : [];
+  S.round        = validRound(d.round) ? d.round : null;
+  if (S.round && !S.teams.length) S.round = null;
+}
+
+/* --- ניווט בין מסכים --------------------------------------------------- */
+function showScreen(id){
+  SCREEN_IDS.forEach(sid => {
+    const node = document.getElementById(sid);
+    if (node) node.classList.toggle('active', sid === id);
+  });
+  fitAll();
+}
+
+function goRoster(){ cancelWipe(); renderRoster(); showScreen('roster-screen'); }
+
+function goTeams(){
+  if (S.players.length < KESHER.MIN_PLAYERS){
+    el('roster-error').textContent =
+      'צריך לפחות ' + KESHER.MIN_PLAYERS + ' משתתפים כדי לחלק לצוותים.';
+    return;
+  }
+  if (!S.teams.length || teamsStale()) S.teams = numberTeams(KESHER.formTeams(S.players));
+  save(); renderTeams(); showScreen('teams-screen');
+}
+
+function goMenu(){
+  if (S.players.length < KESHER.MIN_PLAYERS){ goRoster(); return; }
+  if (!S.teams.length || teamsStale()) S.teams = numberTeams(KESHER.formTeams(S.players));
+  stopTimer(); save(); renderMenu(); showScreen('menu-screen');
+}
+
+/* --- 1. מסך הרכב ------------------------------------------------------- */
+function renderRoster(){
+  const list = el('roster-list');
+  list.textContent = '';
+  S.players.forEach((p, i) => {
+    const li = document.createElement('li');
+    li.className = 'person';
+    const name = document.createElement('span');
+    name.className = 'person__name'; name.textContent = p.name;
+    const age = document.createElement('span');
+    // "גיל 8" ולא "בן 8" — אין לנו מידע על מין המשתתף, והניסוח הנייטרלי
+    // נכון לכולם ונקרא טוב גם ממטר.
+    age.className = 'person__age'; age.textContent = 'גיל ' + p.age;
+    const x = document.createElement('button');
+    x.type = 'button'; x.className = 'person__x'; x.textContent = 'הסרה';
+    x.setAttribute('data-i', String(i));
+    x.setAttribute('aria-label', 'הסרת ' + p.name + ' מהרשימה');
+    li.append(name, age, x);
+    list.append(li);
+  });
+  el('roster-count').textContent = 'הרשימה · ' + S.players.length +
+    (S.players.length === 1 ? ' משתתף' : ' משתתפים');
+
+  const enough = S.players.length >= KESHER.MIN_PLAYERS;
+  const need = KESHER.MIN_PLAYERS - S.players.length;
+  el('roster-next').disabled = !enough;
+  el('roster-hint').textContent = enough
+    ? 'אפשר להמשיך. ' + S.players.length + ' משתתפים יתחלקו ל-' +
+      Math.min(KESHER.MAX_TEAMS, Math.floor(S.players.length / 2)) + ' צוותים.'
+    : '"ממשיכים" מושבת כי אין עדיין ' + KESHER.MIN_PLAYERS + ' משתתפים — חסרים עוד ' +
+      need + (need === 1 ? ' משתתף' : ' משתתפים') + '.';
+  fitAll();
+}
+
+function addPlayer(){
+  const nameEl = el('roster-name'), ageEl = el('roster-age'), errEl = el('roster-error');
+  const name = String(nameEl.value || '').trim().replace(/\s+/g, ' ');
+  const ageRaw = String(ageEl.value || '').trim();
+  const age = Number(ageRaw);
+
+  if (!name){
+    errEl.textContent = 'צריך שם — אחרת לא נדע של מי התור.'; nameEl.focus(); return;
+  }
+  if (S.players.some(p => p.name === name)){
+    errEl.textContent = '"' + name + '" כבר ברשימה. אפשר להוסיף כינוי מבדיל.';
+    nameEl.focus(); return;
+  }
+  if (!ageRaw || !Number.isFinite(age) || !Number.isInteger(age) || age < 3 || age > 120){
+    errEl.textContent = 'גיל במספר שלם, בין 3 ל-120.'; ageEl.focus(); return;
+  }
+  if (S.players.length >= MAX_PLAYERS){
+    errEl.textContent = 'עד ' + MAX_PLAYERS + ' משתתפים — יותר מזה והתור כמעט לא חוזר.';
+    return;
+  }
+  errEl.textContent = '';
+  S.players.push({ name: name, age: age });
+  if (S.teams.length) S.teams = [];   // ההרכב השתנה — הצוותים ייבנו מחדש
+  S.round = null;
+  nameEl.value = ''; ageEl.value = ''; nameEl.focus();
+  save(); renderRoster();
+}
+
+function removePlayer(i){
+  if (!(i >= 0 && i < S.players.length)) return;
+  S.players.splice(i, 1);
+  S.teams = []; S.round = null;
+  el('roster-error').textContent = '';
+  save(); renderRoster();
+}
+
+// האם הצוותים הקיימים עוד מתאימים לרשימת המשתתפים הנוכחית
+function teamsStale(){
+  const inTeams = S.teams.reduce((acc, t) => acc.concat(t.members.map(m => m.name)), []);
+  if (inTeams.length !== S.players.length) return true;
+  const a = inTeams.slice().sort().join('|');
+  const b = S.players.map(p => p.name).slice().sort().join('|');
+  return a !== b;
+}
+
+// מספור רציף לפי סדר התצוגה + ניקוד נקי
+function numberTeams(teams){
+  return teams.map((t, i) => ({ id: i + 1, members: t.members, score: 0 }));
+}
+
+/* --- 2. מסך צוותים ----------------------------------------------------- */
+function teamTitle(team){ return 'צוות ' + team.id; }
+
+// עברית סופרת אחרת ביחיד. "1 רגעים" נראה כמו תקלה על מסך של ערב משפחתי.
+function plural(n, one, many){ return n === 1 ? one : n + ' ' + many; }
+
+function renderTeams(){
+  const box = el('teams-list');
+  box.textContent = '';
+  S.teams.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'team';
+    const no = document.createElement('div');
+    no.className = 'team__no';
+    const dot = document.createElement('i');
+    no.append(dot, document.createTextNode(teamTitle(t)));
+    card.append(no);
+    t.members.forEach((m, i) => {
+      const row = document.createElement('div');
+      row.className = 'team__member';
+      const nm = document.createElement('span'); nm.textContent = m.name;
+      const ag = document.createElement('small'); ag.textContent = 'גיל ' + m.age;
+      row.append(nm, ag);
+      if (i === 0){
+        const tag = document.createElement('span');
+        tag.className = 'team__tag'; tag.textContent = 'הצעיר';
+        row.append(tag);
+      } else if (i === t.members.length - 1){
+        const tag = document.createElement('span');
+        tag.className = 'team__tag'; tag.textContent = 'הבוגר';
+        row.append(tag);
+      }
+      card.append(row);
+    });
+    box.append(card);
+  });
+  fitAll();
+}
+
+/* ערבוב מחדש.
+   הערה חשובה על המנוע (דיווח, לא תיקון): KESHER.formTeams ממיין את
+   המשתתפים לפי גיל, ולכן הזיווג עצמו (הצעיר עם הבוגר) הוא פונקציה של
+   רשימת הגילאים בלבד — ערבוב סדר המשתתפים משנה את הזיווג רק כשיש גילאים
+   זהים. זו כוונת העיצוב ולא באג, ולכן איננו נוגעים בה. כדי שלחיצה על
+   "ערבבו מחדש" תיתן בכל מקרה תוצאה שנראית אחרת על השולחן, מערבבים גם את
+   סדר הצוותים ומחדשים את מספורם — וחוזרים על הניסיון עד שהחתימה משתנה. */
+function reshuffleTeams(){
+  if (S.players.length < KESHER.MIN_PLAYERS){ goRoster(); return; }
+  const sig = ts => ts.map(t => t.id + ':' + t.members.map(m => m.name).join('+')).join('|');
+  const before = S.teams.length ? sig(S.teams) : '';
+  let next = null;
+  for (let i = 0; i < 40; i++){
+    next = numberTeams(shuffle(KESHER.formTeams(shuffle(S.players))));
+    if (sig(next) !== before) break;
+  }
+  S.teams = next;
+  S.round = null;
+  save(); renderTeams();
+}
+
+/* --- 3. מסך תפריט ------------------------------------------------------ */
+function renderMenu(){
+  renderSegs(el('menu-scroll-segs'));
+  el('menu-story-title').textContent = KESHER.STORY.title;
+  const total = KESHER.STORY.segments.length;
+  const open = KESHER.unlockedSegments(S.familyScore).length;
+  const nextSeg = KESHER.STORY.segments.find(s => s.threshold > S.familyScore);
+  el('menu-progress').textContent =
+    (open === 1 ? 'נפתח קטע אחד' : 'נפתחו ' + open + ' קטעים') +
+    ' מתוך ' + total + ' · ' + plural(S.familyScore, 'נקודה משפחתית אחת', 'נקודות משפחתיות') +
+    (nextSeg ? ' · עוד ' + (nextSeg.threshold - S.familyScore) + ' נקודות לקטע הבא'
+             : ' · המגילה כולה נפתחה');
+  el('menu-teams-line').textContent = S.teams.length
+    ? plural(S.teams.length, 'צוות אחד', 'צוותים') + ' · ' +
+      plural(S.players.length, 'משתתף אחד', 'משתתפים') +
+      (S.round ? ' · יש סבב פעיל שנעצר באמצע' : '')
+    : 'אין עוד צוותים.';
+  cancelWipe();
+  fitAll();
+}
+
+function askWipe(){
+  const ul = el('menu-wipe-list');
+  ul.textContent = '';
+  [
+    plural(S.players.length, 'משתתף אחד ברשימה', 'משתתפים ברשימה'),
+    plural(S.teams.length, 'צוות אחד והניקוד שלו', 'צוותים והניקוד שלהם'),
+    plural(S.familyScore, 'נקודה משפחתית אחת', 'נקודות משפחתיות') + ' — ' +
+      plural(KESHER.unlockedSegments(S.familyScore).length,
+             'קטע מגילה אחד יינעל מחדש', 'קטעי מגילה יינעלו מחדש'),
+    plural(S.starred.length, 'רגע אחד שסומן בכוכב', 'רגעים שסומנו בכוכב'),
+    plural(Object.keys(S.cardStatus).length, 'קלף אחד שסומן כמשוחק', 'קלפים שסומנו כמשוחקים'),
+    S.round ? 'הסבב שנעצר באמצע' : 'אין סבב פעיל למחוק'
+  ].forEach(txt => {
+    const li = document.createElement('li');
+    li.textContent = txt;
+    ul.append(li);
+  });
+  el('menu-wipe').hidden = false;
+  fitAll();
+}
+
+function cancelWipe(){
+  const node = el('menu-wipe');
+  if (node) node.hidden = true;
+}
+
+function confirmWipe(){
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e){ }
+  S = { players:[], teams:[], cardStatus:{}, starred:[], familyScore:0, shownSegments:[], round:null };
+  stopTimer();
+  el('roster-name').value = ''; el('roster-age').value = '';
+  el('roster-error').textContent = '';
+  goRoster();
+}
+
+/* --- פס המגילה --------------------------------------------------------- */
+function renderSegs(node){
+  if (!node) return;
+  const segs = KESHER.STORY.segments;
+  const open = KESHER.unlockedSegments(S.familyScore).length;
+  node.textContent = '';
+  segs.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'seg' + (i < open ? ' seg--open' : (i === open ? ' seg--next' : ''));
+    d.textContent = String(s.n);
+    // ברמז למקטע נעול חושפים רק את הסף, לא את התוכן
+    d.title = i < open ? s.title : 'נפתח ב-' + s.threshold + ' נקודות';
+    node.append(d);
+  });
+}
+
+/* --- 4. מסך משחק ------------------------------------------------------- */
+function startFullRound(){ startRound(20); }
+function startShortRound(){ startRound(10); }
+
+function startRound(size){
+  if (S.players.length < KESHER.MIN_PLAYERS){ goRoster(); return; }
+  if (!S.teams.length || teamsStale()) S.teams = numberTeams(KESHER.formTeams(S.players));
+  const turns = KESHER.buildRound(S.teams, size, S.cardStatus);
+  if (!turns.length){
+    el('menu-progress').textContent = 'נגמרו הקלפים הזמינים. "משפחה חדשה · מחיקה" יאפס את הסימונים.';
+    return;
+  }
+  S.teams.forEach(t => { t.score = 0; });
+  S.round = { turns: turns, idx: 0, size: size };
+  save();
+  showScreen('game-screen');
+  renderGame();
+  flushSegments();   // בערב הראשון זה פותח את הקטע הראשון (סף 0)
+}
+
+function currentTurn(){
+  const r = S.round;
+  if (!r || r.idx < 0 || r.idx >= r.turns.length) return null;
+  return r.turns[r.idx];
+}
+
+function renderGame(){
+  const r = S.round;
+  if (!r){ goMenu(); return; }
+  if (r.idx >= r.turns.length){ endRound(); return; }
+  const turn = r.turns[r.idx];
+  const card = KESHER.CARDS.find(c => c.id === turn.cardId);
+  const meta = KESHER.CARD_META[turn.cardId];
+  const team = S.teams.find(t => t.id === turn.teamId) || S.teams[0];
+  if (!card || !meta || !team){ endRound(); return; }
+
+  renderSegs(el('scroll-segs'));
+  renderBoard(turn.teamId);
+
+  const deck = KESHER.DECKS[card.deck];
+  el('card-deck').textContent = deck.name;
+  el('card-stamp').innerHTML = stampSvg(deck.stamp);
+
+  const rolesEl = el('card-roles');
+  rolesEl.textContent = '';
+  const roles = rolesInfo(meta.roles, team);
+  if (roles){
+    const a = document.createElement('div');
+    a.className = 'roles__names'; a.textContent = roles.withNames;
+    const b = document.createElement('div');
+    b.className = 'roles__canon'; b.textContent = roles.canon;
+    rolesEl.append(a, b);
+    rolesEl.hidden = false;
+  } else {
+    rolesEl.hidden = true;   // roles === 'together' — לא מציגים את השורה כלל
+  }
+
+  el('card-audience').textContent = AUDIENCE_LABEL[meta.audience] || '';
+
+  UI.secretShown = false;          // מעבר קלף מסתיר תמיד
+  applyCardText(card, meta);
+  renderActions(meta);
+  setupTimer(meta);
+  renderStar(card.id);
+
+  el('game-progress').textContent = 'קלף ' + (r.idx + 1) + ' מתוך ' + r.turns.length +
+    ' · ' + teamTitle(team) + ' בתור';
+  fitAll();
+}
+
+function rolesInfo(roles, team){
+  if (!ROLE_CANON[roles]) return null;   // together — אין שורת תפקידים
+  const members = (team && team.members) || [];
+  const young = members.length ? members[0].name : 'הצעיר';
+  const older = members.length ? members[members.length - 1].name : 'הבוגר';
+  // שמות + שם התפקיד במקף. לא מטים את הפועל לפי מין כי אין לנו מידע על
+  // המין של המשתתפים, והניחוש היה שוגה בחצי מהמקרים. הניסוח הקנוני
+  // מהמפרט מופיע מתחת, מילה במילה.
+  let withNames;
+  if (roles === 'young-acts')      withNames = young + ' — מבצע · ' + older + ' — מנחש';
+  else if (roles === 'older-acts') withNames = older + ' — מבצע · ' + young + ' — מנחש';
+  else                             withNames = young + ' — שואל · ' + older + ' — עונה';
+  return { withNames: withNames, canon: ROLE_CANON[roles] };
+}
+
+function renderBoard(turnTeamId){
+  const box = el('scoreboard');
+  box.textContent = '';
+  S.teams.forEach(t => {
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (t.id === turnTeamId ? ' chip--turn' : '');
+    const txt = document.createElement('div');
+    txt.className = 'chip__txt';
+    const name = document.createElement('div');
+    name.className = 'chip__name';
+    name.textContent = teamTitle(t) + (t.id === turnTeamId ? ' · בתור' : '');
+    const who = document.createElement('div');
+    who.className = 'chip__who';
+    who.textContent = t.members.map(m => m.name).join(' · ');
+    txt.append(name, who);
+    const score = document.createElement('div');
+    score.className = 'chip__score';
+    score.textContent = String(t.score || 0);
+    chip.append(txt, score);
+    box.append(chip);
+  });
+}
+
+/* --- הצצה פרטית -------------------------------------------------------
+   הדרישה הקריטית: כל עוד הקלף מוסתר, מחרוזת הטקסט אינה קיימת ב-DOM
+   בשום צורה — לא כצומת טקסט, לא כמאפיין, לא ב-dataset ולא ב-title.
+   המחרוזת יושבת רק ב-KESHER.CARDS שבזיכרון. applyCardText הוא המקום
+   היחיד בקובץ שכותב אותה לעמוד, והוא עושה זאת רק כש-UI.secretShown.
+   בהסתרה או במעבר קלף מוחקים את תוכן הצומת, ולא רק מסתירים אותו. */
+function applyCardText(card, meta){
+  const txt = el('card-text'), shroud = el('card-shroud'), btn = el('secret-btn');
+  const concealed = !!meta.secret && !UI.secretShown;
+  if (concealed){
+    txt.textContent = '';        // מסיר את צומת הטקסט מה-DOM
+    txt.hidden = true;
+    shroud.hidden = false;
+  } else {
+    shroud.hidden = true;
+    txt.hidden = false;
+    txt.textContent = card.text;
+  }
+  btn.hidden = !meta.secret || concealed;
+}
+
+function toggleSecret(){
+  const turn = currentTurn();
+  if (!turn) return;
+  const meta = KESHER.CARD_META[turn.cardId];
+  if (!meta || !meta.secret) return;
+  UI.secretShown = !UI.secretShown;
+  // אם הקלף כבר מסומן בכוכב, החשיפה מתירה להציג את הטקסט גם בסיכום
+  if (UI.secretShown){
+    const star = S.starred.find(s => s.cardId === turn.cardId);
+    if (star && !star.revealed){ star.revealed = true; save(); }
+  }
+  applyCardText(KESHER.CARDS.find(c => c.id === turn.cardId), meta);
+  fitAll();
+}
+
+/* --- כפתורי פעולה ------------------------------------------------------
+   נבנים דינמית, בלי onclick בתוך HTML מיוצר: ההאזנה היא על המכולה
+   לפי data-act, כך שכל onclick בקובץ הוא סטטי וניתן לבדיקה. */
+function renderActions(meta){
+  const box = el('card-actions');
+  box.textContent = '';
+  const main = document.createElement('div');
+  main.className = 'actions__main';
+  if (meta.scoring){
+    main.append(actionBtn('ok', 'הצליחו', 'btn btn--ok btn--big'));
+    main.append(actionBtn('no', 'לא הצליחו', 'btn btn--no btn--big'));
+  } else {
+    main.append(actionBtn('done', 'סיימנו', 'btn btn--gold btn--big'));
+  }
+  box.append(main);
+  box.append(actionBtn('skip', 'דלגו', 'btn btn--ghost btn--wide'));
+}
+
+function actionBtn(act, label, cls){
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = cls; b.textContent = label;
+  b.setAttribute('data-act', act);
+  return b;
+}
+
+function awardPoint(teamId){
+  const team = S.teams.find(t => t.id === teamId);
+  if (!team) return;
+  team.score = (team.score || 0) + 1;
+  // הניקוד המשפחתי שמניע את המגילה הוא סכום נקודות כל הצוותים, והוא
+  // מצטבר בין סבבים וערבים — לכן מונה נפרד ולא חישוב מחדש מהצוותים.
+  S.familyScore += 1;
+}
+
+function finishCard(markDone, scored){
+  const turn = currentTurn();
+  if (!turn) return;
+  stopTimer();
+  UI.secretShown = false;
+  if (scored) awardPoint(turn.teamId);
+  if (markDone) S.cardStatus[turn.cardId] = 'done';
+  S.round.idx += 1;
+  save();
+  if (S.round.idx >= S.round.turns.length) endRound();
+  else renderGame();
+  flushSegments();   // החשיפה נפתחת מעל המסך שכבר התעדכן
+}
+
+function cardOk(){   finishCard(true,  true);  }
+function cardNo(){   finishCard(true,  false); }
+function cardDone(){ finishCard(true,  false); }
+// "דלגו" אינו מסמן את הקלף כמשוחק — הוא יוכל לחזור בסבב אחר
+function cardSkip(){ finishCard(false, false); }
+
+/* --- כוכב: רגע לאלבום -------------------------------------------------- */
+function renderStar(cardId){
+  const btn = el('star-btn');
+  const on = S.starred.some(s => s.cardId === cardId);
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  btn.lastElementChild.textContent = on ? 'סומן לאלבום' : 'רגע לאלבום';
+}
+
+function toggleStar(){
+  const turn = currentTurn();
+  if (!turn) return;
+  const i = S.starred.findIndex(s => s.cardId === turn.cardId);
+  if (i >= 0){
+    S.starred.splice(i, 1);
+  } else {
+    const card = KESHER.CARDS.find(c => c.id === turn.cardId);
+    const team = S.teams.find(t => t.id === turn.teamId);
+    S.starred.push({
+      cardId: card.id,
+      deck: KESHER.DECKS[card.deck].name,
+      team: team ? teamTitle(team) + ' · ' + team.members.map(m => m.name).join(' · ') : '',
+      // קלף סודי שסומן בכוכב בלי שנחשף אסור שיודלף במסך הסיכום — שם הוא
+      // יוצג מול כל השולחן, כולל מי שעוד אמור לנחש אותו בערב אחר.
+      revealed: !KESHER.CARD_META[card.id].secret || UI.secretShown
+    });
+  }
+  save(); renderStar(turn.cardId);
+}
+
+/* --- טיימר ------------------------------------------------------------- */
+const TIMER_R = 44;
+const TIMER_C = 2 * Math.PI * TIMER_R;
+
+function setupTimer(meta){
+  stopTimer();
+  const box = el('card-timer');
+  if (!meta.durationSec){ box.hidden = true; return; }
+  box.hidden = false;
+  UI.timerTotal = meta.durationSec;
+  UI.timerLeft = meta.durationSec;
+  el('timer-ring').classList.remove('timer--out');
+  el('timer-btn').textContent = 'מתחילים לספור';
+  paintTimer();
+}
+
+function paintTimer(){
+  const arc = el('timer-arc');
+  arc.setAttribute('stroke-dasharray', TIMER_C.toFixed(1));
+  const frac = UI.timerTotal ? Math.max(0, Math.min(1, UI.timerLeft / UI.timerTotal)) : 0;
+  arc.setAttribute('stroke-dashoffset', (TIMER_C * (1 - frac)).toFixed(1));
+  el('timer-digits').textContent = String(Math.max(0, Math.ceil(UI.timerLeft)));
+}
+
+function toggleTimer(){
+  if (UI.timer){
+    stopTimer();
+    el('timer-btn').textContent = 'ממשיכים לספור';
+    return;
+  }
+  if (UI.timerLeft <= 0){
+    UI.timerLeft = UI.timerTotal;
+    el('timer-ring').classList.remove('timer--out');
+  }
+  UI.timerEnd = Date.now() + UI.timerLeft * 1000;
+  UI.timer = setInterval(tickTimer, 200);
+  el('timer-btn').textContent = 'עוצרים';
+  paintTimer();
+}
+
+function tickTimer(){
+  UI.timerLeft = (UI.timerEnd - Date.now()) / 1000;
+  if (UI.timerLeft <= 0){
+    UI.timerLeft = 0;
+    stopTimer();
+    el('timer-ring').classList.add('timer--out');
+    el('timer-btn').textContent = 'שוב';
+    playChime();
+  }
+  paintTimer();
+}
+
+function stopTimer(){
+  if (UI.timer){ clearInterval(UI.timer); UI.timer = null; }
+}
+
+/* צליל סיום: אקורד של ארבע הרמוניות עם זנב דעיכה ארוך — נשמע כפעמון
+   ולא כציפצוף דק, כדי שיישמע מעל שמונה אנשים מדברים. */
+function playChime(){
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const ctx = UI.audio || (UI.audio = new AC());
+    if (ctx.state === 'suspended' && ctx.resume) ctx.resume();
+    const t0 = ctx.currentTime + 0.03;
+    const master = ctx.createGain();
+    master.connect(ctx.destination);
+    master.gain.setValueAtTime(0.0001, t0);
+    master.gain.linearRampToValueAtTime(0.5, t0 + 0.04);
+    master.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.1);
+    [392.00, 523.25, 659.25, 783.99].forEach((hz, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = (i === 3) ? 'sine' : 'triangle';
+      osc.frequency.setValueAtTime(hz, t0);
+      const at = t0 + i * 0.045;
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.linearRampToValueAtTime(i === 3 ? 0.14 : 0.26, at + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.7);
+      osc.connect(gain); gain.connect(master);
+      osc.start(at); osc.stop(at + 1.8);
+    });
+  } catch(e){ /* אין אודיו — המשחק ממשיך בשקט */ }
+}
+
+/* --- חשיפת קטע מגילה --------------------------------------------------- */
+function pendingSegments(){
+  return KESHER.unlockedSegments(S.familyScore)
+    .filter(s => S.shownSegments.indexOf(s.n) === -1);
+}
+
+function flushSegments(){
+  const pending = pendingSegments();
+  if (!pending.length) return;
+  UI.segQueue = pending;
+  showNextSegment();
+}
+
+function showNextSegment(){
+  const seg = UI.segQueue.shift();
+  if (!seg){ el('segment-overlay').hidden = true; return; }
+  if (S.shownSegments.indexOf(seg.n) === -1) S.shownSegments.push(seg.n);
+  save();
+  el('segment-kicker').textContent =
+    'קטע ' + seg.n + ' מתוך ' + KESHER.STORY.segments.length + ' · ' + KESHER.STORY.title;
+  el('segment-title').textContent = seg.title;
+  el('segment-text').textContent = seg.text;
+  el('segment-adults').textContent = seg.forAdults;
+  const ov = el('segment-overlay');
+  ov.hidden = false;
+  // מאלצים הרצה מחדש של אנימציית הכניסה גם בקטע שני ברצף
+  const panel = ov.firstElementChild;
+  if (panel){ panel.style.animation = 'none'; void panel.offsetWidth; panel.style.animation = ''; }
+  renderSegs(el('scroll-segs'));
+  renderSegs(el('menu-scroll-segs'));
+  renderSegs(el('summary-scroll-segs'));
+}
+
+function closeSegment(){
+  if (UI.segQueue.length){ showNextSegment(); return; }
+  el('segment-overlay').hidden = true;
+  fitAll();
+}
+
+/* --- 5. מסך סיכום ------------------------------------------------------ */
+function pauseRound(){ save(); goMenu(); }
+
+function endRound(){
+  stopTimer();
+  renderSummary();
+  showScreen('summary-screen');
+}
+
+function anotherRound(){
+  S.teams.forEach(t => { t.score = 0; });
+  S.round = null;
+  save(); goMenu();
+}
+
+function renderSummary(){
+  const ranked = S.teams.slice().sort((a, b) => (b.score || 0) - (a.score || 0));
+  const top = ranked.length ? (ranked[0].score || 0) : 0;
+  const winners = ranked.filter(t => (t.score || 0) === top);
+
+  const win = el('summary-winner');
+  win.textContent = '';
+  const kicker = document.createElement('div'); kicker.className = 'winner__k';
+  const name = document.createElement('div'); name.className = 'winner__n';
+  if (!ranked.length){
+    kicker.textContent = 'אין צוותים'; name.textContent = '—';
+  } else if (top === 0){
+    kicker.textContent = 'הפעם לא נצברו נקודות';
+    name.textContent = 'כולם בתיקו';
+  } else if (winners.length > 1){
+    kicker.textContent = 'תיקו — ' + winners.length +
+      ' צוותים מוכרזים יחד, בלי סבב שובר שוויון';
+    name.textContent = winners.map(teamTitle).join(' · ') + ' — ' + top + ' נקודות';
+  } else {
+    kicker.textContent = 'הצוות המנצח';
+    name.textContent = teamTitle(winners[0]) + ' · ' +
+      winners[0].members.map(m => m.name).join(' · ') + ' — ' + top + ' נקודות';
+  }
+  win.append(kicker, name);
+
+  const table = el('summary-table');
+  table.textContent = '';
+  ranked.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'trow' + ((t.score || 0) === top && top > 0 ? ' trow--top' : '');
+    const label = document.createElement('span');
+    label.textContent = teamTitle(t) + ' · ' + t.members.map(m => m.name).join(' · ');
+    const score = document.createElement('b');
+    score.textContent = String(t.score || 0);
+    row.append(label, score);
+    table.append(row);
+  });
+
+  const stars = el('summary-stars');
+  stars.textContent = '';
+  if (!S.starred.length){
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = 'לא סומנו רגעים. הכוכב שעל הקלף שומר רגע בין ערבים.';
+    stars.append(li);
+  } else {
+    S.starred.forEach(s => {
+      const card = KESHER.CARDS.find(c => c.id === s.cardId);
+      const li = document.createElement('li');
+      const body = (s.revealed !== false && card)
+        ? card.text
+        : 'קלף סודי שסומן ולא נחשף — נשמר לערב הבא.';
+      li.textContent = (s.deck ? s.deck + ' · ' : '') + (s.team ? s.team + '\n' : '') + body;
+      stars.append(li);
+    });
+  }
+
+  renderSegs(el('summary-scroll-segs'));
+  const total = KESHER.STORY.segments.length;
+  const open = KESHER.unlockedSegments(S.familyScore).length;
+  const nextSeg = KESHER.STORY.segments.find(s => s.threshold > S.familyScore);
+  el('summary-progress').textContent =
+    (open === 1 ? 'נפתח קטע אחד' : 'נפתחו ' + open + ' קטעים') + ' מתוך ' + total +
+    ' · ' + plural(S.familyScore, 'נקודה משפחתית אחת', 'נקודות משפחתיות') +
+    (nextSeg ? ' · עוד ' + (nextSeg.threshold - S.familyScore) + ' נקודות לקטע "' + nextSeg.title + '"'
+             : ' · המגילה כולה נפתחה');
+  fitAll();
+}
+
+/* --- חותמות החפיסות: SVG בקו אחד, זהב, בלי אימוג'י -------------------- */
+function stampSvg(kind){
+  const open = '<svg viewBox="0 0 24 24" fill="none" stroke="#D9A441" ' +
+               'stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">';
+  const shapes = {
+    scroll: '<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>' +
+            '<path d="M9 8h6M9 12h6M9 16h4"/>',
+    mask:   '<path d="M4 4h16v6.5A8 8 0 0 1 12 19 8 8 0 0 1 4 10.5V4z"/>' +
+            '<path d="M8.5 9.5h1.5M14 9.5h1.5"/><path d="M9 14c1.8 1.4 4.2 1.4 6 0"/>',
+    eye:    '<path d="M2.5 12S6.2 6.5 12 6.5 21.5 12 21.5 12 17.8 17.5 12 17.5 2.5 12 2.5 12z"/>' +
+            '<circle cx="12" cy="12" r="2.6"/>',
+    flame:  '<path d="M12 2.5c3 3.8 6 6.2 6 10.1A6 6 0 0 1 6 12.6c0-2 .9-3.6 2-5.1.4 2 1.4 3 2.9 3.1' +
+            '-1-3 .1-6.1 1.1-8.1z"/>'
+  };
+  return open + (shapes[kind] || shapes.scroll) + '</svg>';
+}
+
+/* --- התאמה למסך -------------------------------------------------------
+   אין גלילה בשום מסך. --fit הוא מכפיל גלובלי לכל מידה בעיצוב, ובנוסף
+   טקסט הקלף מוקטן בצעדים עד שהוא נכנס בגוף הקלף. */
+function fitAll(){
+  const root = document.documentElement;
+  const w = window.innerWidth || 1024, h = window.innerHeight || 768;
+  const f = Math.max(0.56, Math.min(1.3, Math.min(w / 1024, h / 768)));
+  root.style.setProperty('--fit', f.toFixed(3));
+  root.style.setProperty('--deck-px', String(Math.round(Math.min(430, w * 0.46))));
+
+  const body = el('card-body'), txt = el('card-text');
+  if (!body || !txt || txt.hidden) return;
+  let fs = Math.round(Math.max(26, 50 * f));
+  const min = Math.max(22, Math.round(36 * f));
+  txt.style.fontSize = fs + 'px';
+  let guard = 0;
+  while (txt.scrollHeight > body.clientHeight && fs > min && guard++ < 60){
+    fs -= 2;
+    txt.style.fontSize = fs + 'px';
+  }
+}
+
+/* --- חיווט ואתחול ------------------------------------------------------ */
+function bindEvents(){
+  window.addEventListener('resize', fitAll);
+  window.addEventListener('orientationchange', fitAll);
+  // ResizeObserver תופס גם מה ש-resize מפספס: סרגל כתובות שנעלם, מקלדת
+  // רכה שנפתחת, ושינוי של 100dvh באמצע.
+  if (typeof ResizeObserver === 'function'){
+    new ResizeObserver(fitAll).observe(document.documentElement);
+  }
+  if (window.visualViewport && window.visualViewport.addEventListener){
+    window.visualViewport.addEventListener('resize', fitAll);
+  }
+
+  el('roster-list').addEventListener('click', ev => {
+    const btn = ev.target.closest('.person__x');
+    if (!btn) return;
+    removePlayer(Number(btn.getAttribute('data-i')));
+  });
+
+  el('card-actions').addEventListener('click', ev => {
+    const btn = ev.target.closest('button[data-act]');
+    if (!btn) return;
+    const act = btn.getAttribute('data-act');
+    if (act === 'ok') cardOk();
+    else if (act === 'no') cardNo();
+    else if (act === 'done') cardDone();
+    else if (act === 'skip') cardSkip();
+  });
+
+  const onEnter = ev => { if (ev.key === 'Enter'){ ev.preventDefault(); addPlayer(); } };
+  el('roster-name').addEventListener('keydown', onEnter);
+  el('roster-age').addEventListener('keydown', onEnter);
+}
+
+function boot(){
+  load();
+  bindEvents();
+  if (S.players.length >= KESHER.MIN_PLAYERS && (!S.teams.length || teamsStale())){
+    try { S.teams = numberTeams(KESHER.formTeams(S.players)); } catch(e){ S.teams = []; }
+  }
+  renderRoster();
+  if (S.teams.length) renderTeams();
+
+  if (S.round && S.teams.length){
+    // רענון באמצע סבב חוזר לאותו קלף עם אותו ניקוד
+    renderMenu();
+    if (S.round.idx >= S.round.turns.length) endRound();
+    else { showScreen('game-screen'); renderGame(); }
+  } else if (S.teams.length && S.players.length >= KESHER.MIN_PLAYERS){
+    renderMenu(); showScreen('menu-screen');
+  } else {
+    showScreen('roster-screen');
+  }
+  fitAll();
+}
+
+// boot רץ רק כשיש DOM אמיתי. בסביבת הבדיקות (vm sandbox) ל-window אין
+// addEventListener, ולכן כל הקוד שלמעלה נטען בלי להריץ דבר.
+if (typeof window.addEventListener === 'function' &&
+    typeof document !== 'undefined' && typeof document.addEventListener === 'function'){
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  window.addEventListener('load', registerServiceWorker);
+}
+
+/* נרשם רק כשהמשחק מוגש משרת (לא file:// ולא iframe של Sites) */
+function registerServiceWorker(){
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.update();                                  // בודק עדכון בכל טעינה
+    reg.addEventListener('updatefound', ()=>{
+      const sw = reg.installing;
+      if (!sw) return;
+      sw.addEventListener('statechange', ()=>{
+        // גרסה חדשה מוכנה ויש כבר worker פעיל — מחליפים מיד
+        if (sw.state === 'installed' && navigator.serviceWorker.controller){
+          sw.postMessage('skip-waiting');
+        }
+      });
+    });
+  }).catch(()=>{});                                // אין קובץ? לא נורא
+
+  // כשה-worker החדש משתלט — טוענים מחדש פעם אחת כדי לקבל את הגרסה העדכנית
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+    if (reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
+}
+</script>
+</body>
+</html>

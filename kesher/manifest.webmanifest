@@ -1,0 +1,19 @@
+{
+  "name": "קשר משפחתי",
+  "short_name": "קשר משפחתי",
+  "description": "משחק קלפים משפחתי — חידות, זיכרון ומגילות סביב השולחן",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A1428",
+  "theme_color": "#0A1428",
+  "categories": ["games", "lifestyle"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
